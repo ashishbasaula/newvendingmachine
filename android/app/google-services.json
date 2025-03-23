@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "37034027762",
+    "project_id": "vending-1ba42",
+    "storage_bucket": "vending-1ba42.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:37034027762:android:920c3280507b9a0b2c7e6b",
+        "android_client_info": {
+          "package_name": "com.appAra.newVending"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyGi_Q43xf93Yk8MJRvyawnwJ88MlljEM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

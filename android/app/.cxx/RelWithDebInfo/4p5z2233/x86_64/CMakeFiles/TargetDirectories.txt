@@ -1,0 +1,2 @@
+G:/flutter/flutterclient Project/newvendingmachine/android/app/.cxx/RelWithDebInfo/4p5z2233/x86_64/CMakeFiles/edit_cache.dir
+G:/flutter/flutterclient Project/newvendingmachine/android/app/.cxx/RelWithDebInfo/4p5z2233/x86_64/CMakeFiles/rebuild_cache.dir

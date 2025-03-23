@@ -1,0 +1,1 @@
+G:\flutter\flutterclient Project\newvendingmachine\build\app\intermediates\cxx\RelWithDebInfo\4p5z2233\obj\arm64-v8a
