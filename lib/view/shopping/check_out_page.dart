@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:newvendingmachine/controller/Helper/device_ui_helper.dart';
+import 'package:newvendingmachine/controller/Shipment/shipment_controller.dart';
 import 'package:newvendingmachine/controller/cart/cart_controller.dart';
 import 'package:newvendingmachine/utils/colors_utils.dart';
 import 'package:newvendingmachine/utils/message_utils.dart';
@@ -12,7 +13,7 @@ class CheckOutPage extends StatelessWidget {
   CheckOutPage({super.key});
 
   final cartController = Get.find<CartController>();
-
+  final shipmentController = Get.find<ShipmentController>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -137,7 +138,7 @@ class CheckOutPage extends StatelessWidget {
                           size: DeviceUiHelper.isNotMobile() ? 250 : 100,
                         ),
                         onPressed: () {
-                          SmartDialog.showLoading(msg: "Wait while processing");
+                          shipmentController.initialShipment();
                           // motorController.configureSerialPort();
                         },
                       ),

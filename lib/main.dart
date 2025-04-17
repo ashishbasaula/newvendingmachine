@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:newvendingmachine/Services/local_storage_services.dart';
 import 'package:newvendingmachine/controller/Auth/auth_controller.dart';
 import 'package:newvendingmachine/controller/Device/setting_controller.dart';
+import 'package:newvendingmachine/controller/Shipment/shipment_controller.dart';
 import 'package:newvendingmachine/view/Auth/login_screen.dart';
 import 'package:newvendingmachine/view/Dashboard/dashboard_page.dart';
 
@@ -18,6 +19,7 @@ void main() async {
   Get.put(CartController());
   Get.put(ItemsController());
   Get.put(SettingController());
+  Get.put(ShipmentController());
 
   final isLogin = await LocalStorageServices.getUserLoginStatus();
   runApp(MyApp(

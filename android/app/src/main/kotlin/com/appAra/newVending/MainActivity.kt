@@ -24,10 +24,12 @@ class MainActivity: FlutterActivity() {
      private var baudrate: Int = 9600
     // serial driver
     private lateinit var driver: UBoard
+    private lateinit var cardReaderManager: CardReaderManager
     // serial address
     var commid = "/dev/ttyS0"
  init {
         System.loadLibrary("serial_port")
+        
     }
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -43,12 +45,15 @@ class MainActivity: FlutterActivity() {
             Toast.makeText(this@MainActivity, "Failed to open serial port", Toast.LENGTH_SHORT).show()
         }
     }
+     cardReaderManager = CardReaderManager(applicationContext)
+     // init the card reader 
+     cardReaderManager.initUsbConnection()
 }
 
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-
+       
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             val manager = MyManager.getInstance(this)
             when (call.method) {

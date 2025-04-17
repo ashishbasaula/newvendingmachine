@@ -46,6 +46,8 @@ dependencies {
     implementation files('libs/usdk_v120601.jar')
     implementation files('libs/zckjAPI-2.2.jar')
     implementation files('libs/ysapi.jar')
+    implementation files('libs/SmartCardLib.jar')
+
 
 
 
