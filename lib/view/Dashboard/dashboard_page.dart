@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:newvendingmachine/Services/scanner_service.dart';
 import 'package:newvendingmachine/controller/Ads/ads_controller.dart';
 import 'package:newvendingmachine/controller/Helper/device_ui_helper.dart';
 import 'package:newvendingmachine/controller/Helper/helper_controller.dart';
@@ -45,11 +46,12 @@ class _DashboardPageState extends State<DashboardPage> {
   final itemsController = Get.find<ItemsController>();
   final helperController = Get.put(HelperController());
   final ads = Get.put(AdsController());
-
+  String scanResult = "";
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: Text(scanResult),
         actions: [
           const Icon(
             Icons.storefront_outlined,
@@ -127,6 +129,7 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Column(
           children: [
             BannerComponent(),
+
             const SizedBox(
               height: 10,
             ),
@@ -134,6 +137,16 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(
               height: 10,
             ),
+
+            ElevatedButton(
+                onPressed: () async {
+                  final value = await ScannerService().getScannerResult();
+                  debugPrint(value);
+                  setState(() {
+                    scanResult = value ?? "NO Result";
+                  });
+                },
+                child: Text("Scan bar code ")),
 
             Obx(() {
               if (!helperController.isUserIdLoaded.value) {

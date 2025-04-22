@@ -42,10 +42,14 @@
     <!-- For older versions of Android -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
+
+    <uses-feature android:name="android.hardware.usb.host" android:required="true"/>
     <application
         android:label="newvendingmachine"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <service android:name="com.wsm.comlib.service.UsbService"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

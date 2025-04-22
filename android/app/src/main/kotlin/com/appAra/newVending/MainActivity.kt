@@ -15,6 +15,10 @@ import cc.uling.usdk.board.wz.para.SReplyPara
 import cc.uling.usdk.board.wz.para.SSReplyPara
 import android.widget.Toast
 import com.ys.rkapi.MyManager;
+import android.os.Handler
+import android.os.Looper
+import io.flutter.plugins.ScannerHelper
+import android.util.Log
 
 
 
@@ -27,7 +31,8 @@ class MainActivity: FlutterActivity() {
     private lateinit var cardReaderManager: CardReaderManager
     // serial address
     var commid = "/dev/ttyS0"
- init {
+    
+    init {
         System.loadLibrary("serial_port")
         
     }
@@ -45,9 +50,9 @@ class MainActivity: FlutterActivity() {
             Toast.makeText(this@MainActivity, "Failed to open serial port", Toast.LENGTH_SHORT).show()
         }
     }
-     cardReaderManager = CardReaderManager(applicationContext)
-     // init the card reader 
-     cardReaderManager.initUsbConnection()
+    //  cardReaderManager = CardReaderManager(applicationContext)
+    //  // init the card reader 
+    //  cardReaderManager.initUsbConnection()
 }
 
 
@@ -147,6 +152,27 @@ class MainActivity: FlutterActivity() {
                     } catch (e: Exception) {
                         result.error("STATUS_ERROR", e.message, null)
                     }
+                }
+                "startScan"->{
+                    try {
+                        ScannerHelper.startScan(this, object : ScannerHelper.ResultCallback {
+                            override fun onResult(scanResult: String?, errorMessage: String?) {
+                                Handler(Looper.getMainLooper()).post {
+                                    if (errorMessage != null) {
+                                        result.error("SCAN_ERROR", errorMessage, null)
+                                    } else {
+                                        result.success(scanResult)
+                                    }
+                                }
+                            }
+                        })
+                        
+                    
+                    }
+                    catch(e: Exception) {
+                        result.error("SCAN_FAILED", e.message, null)
+                    }
+                    
                 }
                 else -> {
                     result.notImplemented()
