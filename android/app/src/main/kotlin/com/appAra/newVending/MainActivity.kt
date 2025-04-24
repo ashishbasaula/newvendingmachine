@@ -18,6 +18,8 @@ import com.ys.rkapi.MyManager;
 import android.os.Handler
 import android.os.Looper
 import io.flutter.plugins.ScannerHelper
+import io.flutter.plugins.SmartCard
+import io.flutter.plugins.SmartCardInterface
 import android.util.Log
 
 
@@ -59,6 +61,8 @@ class MainActivity: FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
        
+        val smartCard = SmartCard(this)
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             val manager = MyManager.getInstance(this)
             when (call.method) {
@@ -173,6 +177,14 @@ class MainActivity: FlutterActivity() {
                         result.error("SCAN_FAILED", e.message, null)
                     }
                     
+                }
+                "GetPaymentList"->{
+                    try {
+                        smartCard.listAvailableDevices(result)
+                    }
+                    catch(e: Exception) {
+                        result.error("SCAN_FAILED", e.message, null)
+                    }
                 }
                 else -> {
                     result.notImplemented()
