@@ -68,12 +68,15 @@ public class SmartCard {
         }
     }
 
-    private boolean isAlcorReader(UsbDevice device) {
-        int vendorId = device.getVendorId();
-        int productId = device.getProductId();
-        return (vendorId == 0x058f && (productId == 0x9540 || productId == 0x9520 || productId == 0x9522 || productId == 0x9525 || productId == 0x9526)) ||
-               (vendorId == 0x2CE3 && (productId == 0x9571 || productId == 0x9572 || productId == 0x9563 || productId == 0x9573));
-    }
+  private boolean isAlcorReader(UsbDevice device) {
+    int vendorId = device.getVendorId();
+    int productId = device.getProductId();
+    return (vendorId == 0x058f && (productId == 0x9540 || productId == 0x9520 || productId == 0x9522 || productId == 0x9525 || productId == 0x9526)) ||
+           (vendorId == 0x2CE3 && (productId == 0x9571 || productId == 0x9572 || productId == 0x9563 || productId == 0x9573 || productId == 0x9567));
+}
+
+
+    
 
 
 public int chooseReaderMode(int index,MethodChannel.Result result){
