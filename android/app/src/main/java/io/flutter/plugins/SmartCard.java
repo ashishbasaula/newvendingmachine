@@ -155,62 +155,88 @@ public void getSelectedDevice(String deviceName,MethodChannel.Result result) {
 }
 
 
-private void switchMode(MethodChannel.Result result)
-	{
-		try{
-			UsbDevice dev = _selectedDevice;
-			if (dev == null)
-			{
-                 result.error("No Device Selected","",null);
-				// error
-				//return;
-			}
-			Intent intent = new Intent();
-			Bundle b = new  Bundle();
-			switch (currentMode)
-			{
-			case Reader.CardModeASYNC:
-              Log.d(TAG, "Reader.CardModeASYNC.toString()");
+private void switchMode(MethodChannel.Result result) {
+    try {
+        UsbDevice dev = _selectedDevice;
+        if (dev == null) {
+            result.error("NO_DEVICE", "No USB device selected", null);
+            return;
+        }
 
-				// intent.setClass(this, com.alcorlink.smartcard.ISO7816_Activity.class);
-				break;
-			case Reader.CardModeSLE4428:
-				// intent.setClass(this, com.alcorlink.smartcard.SLE4428_Activity.class);
-				break;
-			case Reader.CardModeSLE4442:
-				// intent.setClass(this, com.alcorlink.smartcard.SLE4442_Activity.class);
-				break;
-			case Reader.CardModeI2C :
-				// intent.setClass(this, com.alcorlink.smartcard.AT24C_Activity.class);
-				break;
-			case Reader.CardModeAT88SC1608:
-				// intent.setClass(this, com.alcorlink.smartcard.AT88SC1608_Activity.class);
-				break;
-			case  Reader.CardModeAT45D041:
-				// intent.setClass(this, com.alcorlink.smartcard.AT45D041_Activity.class);
-				break;
-			case  Reader.CardModeSLE6636:
-				// intent.setClass(this, com.alcorlink.smartcard.SLE6636_Activity.class);
-				break;
-			case  Reader.CardModeAT88SC102:
-				// intent.setClass(this, com.alcorlink.smartcard.AT88SC102_Activity.class);
-				break;
-			case  0x200:
-				// intent.setClass(this, com.alcorlink.smartcard.MifareS50_Activity.class);
-				break;
-			case Reader.CardModeAT88SC153:
-					// intent.setClass(this, com.alcorlink.smartcard.AT88SC153_Activity.class);
-					break;
-			default :
-				break;
-			}
+        Reader reader = new Reader(context);
+        if (reader.OpenDevice(dev) != 0) {
+            result.error("OPEN_FAIL", "Could not open smart card reader", null);
+            return;
+        }
 
-		}catch (Exception e){
-			 result.error("Error Msg", "Get Exception : " + e.getMessage(),null);
-			 
-			 
-		}
-	}
+        reader.SetCardType(currentMode);
+        byte[] atr = new byte[64];
+        int[] atrLen = new int[1];
+        int powerStatus = reader.PowerOn(0, atr, atrLen);
+        if (powerStatus != 0) {
+            result.error("CARD_FAIL", "Could not power on the card", null);
+            return;
+        }
+
+        // SELECT Payment App
+        byte[] select = hexStringToByteArray("00A404000E315041592E5359532E4444463031");
+        byte[] recv = new byte[300];
+        int[] recvLen = new int[1];
+        int selectStatus = reader.Transmit(0, select, select.length, recv, recvLen);
+        if (selectStatus != 0) {
+            result.error("APDU_FAIL", "Failed SELECT AID", null);
+            return;
+        }
+
+        // READ RECORD (Track 2 Equivalent)
+        byte[] readRecord = hexStringToByteArray("00B2010C00");
+        recv = new byte[300];
+        recvLen[0] = 0;
+        int readStatus = reader.Transmit(0, readRecord, readRecord.length, recv, recvLen);
+
+        if (readStatus != 0) {
+            result.error("APDU_FAIL", "Failed READ RECORD", null);
+            return;
+        }
+
+        // Parse PAN and Expiry from Track 2
+        String track2 = bytesToHex(recv, recvLen[0]);
+        String cardDetails = extractPanAndExpiry(track2);
+        result.success("Card Details: " + cardDetails);
+
+    } catch (Exception e) {
+        result.error("ERROR", "Exception: " + e.getMessage(), null);
+    }
+}
+
+private byte[] hexStringToByteArray(String s) {
+    int len = s.length();
+    byte[] data = new byte[len / 2];
+    for (int i = 0; i < len; i += 2) {
+        data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                             + Character.digit(s.charAt(i+1), 16));
+    }
+    return data;
+}
+
+private String bytesToHex(byte[] bytes, int len) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < len; i++) {
+        sb.append(String.format("%02X", bytes[i]));
+    }
+    return sb.toString();
+}
+
+private String extractPanAndExpiry(String track2Data) {
+    // EMV Track 2 equivalent format: PAN + D + Expiry + ServiceCode
+    int index = track2Data.indexOf("D");
+    if (index == -1) return "Track2 Format Not Found";
+
+    String pan = track2Data.substring(0, index);
+    String expiry = track2Data.substring(index + 1, index + 5); // YYMM
+    return "PAN: " + pan + ", Expiry: " + expiry;
+}
+
 
 
 
