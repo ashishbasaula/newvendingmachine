@@ -12,6 +12,7 @@ import 'package:newvendingmachine/module/user_items_model.dart';
 import 'package:newvendingmachine/utils/padding_utils.dart';
 import 'package:newvendingmachine/view/Dashboard/components/banner_component.dart';
 import 'package:newvendingmachine/view/Dashboard/components/purchase_description.dart';
+import 'package:newvendingmachine/view/Payment/payment_list.dart';
 import 'package:newvendingmachine/view/Setting/setting_page.dart';
 
 import '../../utils/colors_utils.dart';
@@ -140,11 +141,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
             ElevatedButton(
                 onPressed: () async {
-                  final value = await ScannerService().getScannerResult();
-                  debugPrint(value);
-                  setState(() {
-                    scanResult = value ?? "NO Result";
-                  });
+                  // final value = await ScannerService().getScannerResult();
+                  // debugPrint(value);
+                  // setState(() {
+                  //   scanResult = value ?? "NO Result";
+                  // });
+                  Get.to(() => const PaymentList());
                 },
                 child: Text("Scan bar code ")),
 
