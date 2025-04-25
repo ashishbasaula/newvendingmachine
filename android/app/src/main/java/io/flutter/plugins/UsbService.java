@@ -1,4 +1,4 @@
-package com.appAra.newVending;
+package io.flutter.plugins;
 
 import android.app.PendingIntent;
 import android.app.Service;

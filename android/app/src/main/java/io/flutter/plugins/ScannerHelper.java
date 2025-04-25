@@ -77,7 +77,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
 
-import com.appAra.newVending.UsbService;
+ 
 
 public class ScannerHelper {
 
