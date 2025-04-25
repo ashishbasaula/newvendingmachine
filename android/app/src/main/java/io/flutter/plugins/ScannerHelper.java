@@ -114,13 +114,14 @@ public class ScannerHelper {
             return;
         }
 
-        if (usbManager.hasPermission(device)) {
-            Log.d(TAG, "Permission already granted, starting scan");
-            setupAndStartScan();
-        } else {
-            Log.d(TAG, "Requesting USB permission");
-            requestUsbPermission(usbManager, device);
-        }
+        // if (usbManager.hasPermission(device)) {
+        //     Log.d(TAG, "Permission already granted, starting scan");
+        //     setupAndStartScan();
+        // } else {
+        //     Log.d(TAG, "Requesting USB permission");
+           
+        // }
+         requestUsbPermission(usbManager, device);
     }
 
     private static UsbDevice findSupportedDevice(UsbManager usbManager) {
