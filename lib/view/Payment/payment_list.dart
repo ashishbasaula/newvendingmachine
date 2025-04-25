@@ -139,39 +139,24 @@ class _PaymentListState extends State<PaymentList> {
                     if (value != null) selectDevice(value);
                   },
                 ),
-                const SizedBox(height: 16),
-                const Text("Select Reader Mode:"),
-                DropdownButton<int>(
-                  isExpanded: true,
-                  hint: const Text("Choose reader mode"),
-                  value: selectedModeIndex,
-                  items: readerModes.entries.map((entry) {
-                    return DropdownMenuItem(
-                      value: entry.key,
-                      child: Text("${entry.key} - ${entry.value}"),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) setReaderMode(value);
+                ElevatedButton(
+                  onPressed: () async {
+                    try {
+                      const platform =
+                          MethodChannel('com.appAra.newVending/device');
+                      final result =
+                          await platform.invokeMethod('readCardDetails');
+                      showDialog(
+                          context: context,
+                          builder: (_) =>
+                              AlertDialog(content: Text(result.toString())));
+                    } catch (e) {
+                      print("Failed to read card: $e");
+                    }
                   },
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: initHardwareInterface,
-                  child: const Text("Initialize Hardware"),
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: readCardDetails,
-                  child: const Text("Read Card Details"),
-                ),
+                  child: Text('Read Payment Card'),
+                )
               ],
-              const SizedBox(height: 24),
-              if (statusMessage != null)
-                Text(
-                  statusMessage!,
-                  style: const TextStyle(fontSize: 16),
-                ),
             ],
           ),
         ),

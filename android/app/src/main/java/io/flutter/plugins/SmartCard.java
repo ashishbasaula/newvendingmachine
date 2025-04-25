@@ -1,19 +1,17 @@
 package io.flutter.plugins;
 
 import android.content.Context;
-import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbManager;
 import android.util.Log;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import io.flutter.plugin.common.MethodChannel;
 import amlib.ccid.Reader;
-import amlib.hw.HardwareInterface;
-import amlib.hw.HardwareInterfaceSerial;
+import amlib.ccid.SCError;
+import amlib.ccid.ReaderException;
 import amlib.hw.HWType;
+import amlib.hw.ReaderHwException;
+import com.alcorlink.serialport.HardwareInterfaceSerial;
 
 public class SmartCard {
     private static final String TAG = "SmartCard";
@@ -21,8 +19,8 @@ public class SmartCard {
     private UsbManager usbManager;
     private UsbDevice _selectedDevice;
     private int currentMode;
-
-    private HardwareInterfaceSerial hardwareInterface;
+ private Reader reader;
+    private HardwareInterfaceSerial interfaceSerial;
 
     public SmartCard(Context context) {
         this.context = context;
@@ -66,73 +64,46 @@ public class SmartCard {
         result.error("DEVICE_NOT_FOUND", "Selected device not found", null);
     }
 
-    public int chooseReaderMode(int index, MethodChannel.Result result) {
-        currentMode = index;
-        result.success("Reader Mode Set Successfully");
-        return currentMode;
-    }
-
-    public void initHardwareInterface(MethodChannel.Result result) {
+   public void readCard(MethodChannel.Result result) {
         try {
-            if (_selectedDevice == null) {
-                result.error("NO_DEVICE", "No device selected", null);
-                return;
-            }
+            interfaceSerial = new HardwareInterfaceSerial(HWType.eRS232);
+            interfaceSerial.Init("/dev/ttyS0", 38400); // Adjust if needed
 
-            hardwareInterface = new HardwareInterfaceSerial(HWType.eUSB);
-            boolean initialized = hardwareInterface.Init(usbManager, _selectedDevice);
-            if (!initialized) {
-                result.error("INIT_FAILED", "Failed to initialize hardware interface", null);
-                return;
-            }
-
-            result.success("HardwareInterface initialized successfully");
-        } catch (Exception e) {
-            result.error("INIT_ERROR", "Exception during initialization: " + e.getMessage(), null);
-        }
-    }
-
-    public void switchMode(MethodChannel.Result result) {
-        try {
-            if (hardwareInterface == null) {
-                result.error("NOT_INITIALIZED", "Hardware interface not initialized", null);
-                return;
-            }
-
-            Reader reader = new Reader(hardwareInterface);
+            reader = new Reader(interfaceSerial);
             reader.setSlot((byte) 0);
-            int openStatus = reader.open();
 
-            if (openStatus != 0) {
-                result.error("READER_OPEN_FAIL", "Reader open failed with status: " + openStatus, null);
+            int openResult = reader.open();
+            if (openResult != SCError.READER_SUCCESSFUL) {
+                result.error("OPEN_FAIL", "Failed to open reader", null);
                 return;
             }
 
-            int powerStatus = reader.setPower(Reader.CCID_POWERON);
-            if (powerStatus != 0) {
-                result.error("CARD_POWER_FAIL", "Failed to power on card", null);
+            int powerResult = reader.setPower(Reader.CCID_POWERON, Reader.VoltageSwitch.Auto);
+            if (powerResult != SCError.READER_SUCCESSFUL) {
+                result.error("POWER_FAIL", "Failed to power on card", null);
                 return;
             }
 
-            // SELECT AID
+            byte[] atr = reader.getATR();
+            Log.d(TAG, "ATR: " + bytesToHex(atr));
+
+            // Send SELECT AID command for payment card
             byte[] select = hexStringToByteArray("00A404000E315041592E5359532E4444463031");
             byte[] recv = new byte[300];
-            int[] recvLen = new int[]{300};
+            int[] recvLen = new int[1];
 
-            int selectStatus = reader.transmit(select, select.length, recv, recvLen);
-            if (selectStatus != 0) {
-                result.error("SELECT_AID_FAIL", "Failed to SELECT AID", null);
+            int selectResult = reader.transmit(select, select.length, recv, recvLen);
+            if (selectResult != SCError.READER_SUCCESSFUL) {
+                result.error("APDU_FAIL", "SELECT AID failed", null);
                 return;
             }
 
-            // READ RECORD
+            // Send READ RECORD
             byte[] readRecord = hexStringToByteArray("00B2010C00");
-            recv = new byte[300];
             recvLen[0] = 300;
-
-            int readStatus = reader.transmit(readRecord, readRecord.length, recv, recvLen);
-            if (readStatus != 0) {
-                result.error("READ_RECORD_FAIL", "Failed to READ RECORD", null);
+            int readResult = reader.transmit(readRecord, readRecord.length, recv, recvLen);
+            if (readResult != SCError.READER_SUCCESSFUL) {
+                result.error("APDU_FAIL", "READ RECORD failed", null);
                 return;
             }
 
@@ -140,19 +111,20 @@ public class SmartCard {
             String cardDetails = extractPanAndExpiry(track2);
             result.success("Card Details: " + cardDetails);
 
-        } catch (Exception e) {
-            result.error("EXCEPTION", "Exception during card operation: " + e.getMessage(), null);
+            reader.setPower(Reader.CCID_POWEROFF);
+
+        } catch (ReaderHwException | ReaderException e) {
+            result.error("EXCEPTION", e.getMessage(), null);
         }
     }
 
-    private byte[] hexStringToByteArray(String s) {
-        int len = s.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                                + Character.digit(s.charAt(i + 1), 16));
-        }
-        return data;
+    private String extractPanAndExpiry(String track2Data) {
+        int index = track2Data.indexOf("D");
+        if (index == -1) return "Track2 format not found";
+
+        String pan = track2Data.substring(0, index);
+        String expiry = track2Data.substring(index + 1, index + 5); // YYMM
+        return "PAN: " + pan + ", Expiry: " + expiry;
     }
 
     private String bytesToHex(byte[] bytes, int len) {
@@ -163,12 +135,13 @@ public class SmartCard {
         return sb.toString();
     }
 
-    private String extractPanAndExpiry(String track2Data) {
-        int index = track2Data.indexOf("D");
-        if (index == -1) return "Track2 Format Not Found";
-
-        String pan = track2Data.substring(0, index);
-        String expiry = track2Data.substring(index + 1, index + 5); // YYMM
-        return "PAN: " + pan + ", Expiry: " + expiry;
+    private byte[] hexStringToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                    + Character.digit(s.charAt(i + 1), 16));
+        }
+        return data;
     }
 }
