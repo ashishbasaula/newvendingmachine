@@ -114,6 +114,7 @@ public class ScannerHelper {
         }
 
         if (usbManager.hasPermission(device)) {
+              Log.d(TAG, "Permission Granted and move toward the scan");
             setupAndStartScan();
         } else {
             requestUsbPermission(usbManager, device);
