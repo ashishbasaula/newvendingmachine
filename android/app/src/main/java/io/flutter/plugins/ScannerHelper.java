@@ -216,7 +216,7 @@ public class ScannerHelper {
                             Log.d(TAG, "Serial port opened, triggering scan");
                             SerialPortManager.getInstance().scanTrigger(actionStatus -> {
                                 Log.d(TAG, "Scan trigger result: " + actionStatus);
-                                if (actionStatus != 0) {
+                                if (!actionStatus) {
                                     currentCallback.onResult(null, "Scan trigger failed with status: " + actionStatus);
                                     cleanup();
                                 }
