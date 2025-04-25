@@ -178,6 +178,8 @@ class MainActivity: FlutterActivity() {
                     }
                     
                 }
+// this are for the payment card reader 
+
                 "GetPaymentList"->{
                     try {
                         smartCard.listAvailableDevices(result)
@@ -186,6 +188,10 @@ class MainActivity: FlutterActivity() {
                         result.error("SCAN_FAILED", e.message, null)
                     }
                 }
+                "selectDevice" -> smartCard.getSelectedDevice(call.arguments as String, result)
+                "chooseReaderMode" -> smartCard.chooseReaderMode(call.arguments as Int, result)
+                "initHardwareInterface" -> smartCard.initHardwareInterface(result)
+                "switchMode" -> smartCard.switchMode(result)
                 else -> {
                     result.notImplemented()
                 }
