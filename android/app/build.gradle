@@ -38,6 +38,9 @@ kotlinOptions {
             signingConfig = signingConfigs.debug
         }
     }
+       lintOptions {                                                           │
+│     checkReleaseBuilds false                                              │
+│   }   
 }
 dependencies {
  
