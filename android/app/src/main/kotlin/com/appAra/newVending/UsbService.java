@@ -109,7 +109,7 @@ public class UsbService extends Service {
   private final BroadcastReceiver usbReceiver = new BroadcastReceiver() {
       public void onReceive(Context arg0, Intent arg1) {
         if (arg1.getAction().equals("com.android.example.USB_PERMISSION")) {
-   boolean granted = arg1.getExtras() != null && arg1.getExtras().getBoolean("permission");
+   boolean granted = arg1.getBooleanExtra("permission", false);
           if (granted) {
             Intent intent = new Intent("com.felhr.usbservice.USB_PERMISSION_GRANTED");
             Log.d(UsbService.TAG, "UsbService: ACTION_USB_PERMISSION_GRANTED");
