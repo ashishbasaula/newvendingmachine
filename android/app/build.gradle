@@ -20,6 +20,10 @@ compileOptions {
 kotlinOptions {
   jvmTarget = 17
 }
+
+    lintOptions {                                                           
+   checkReleaseBuilds false                                              
+   }
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.appAra.newVending"
@@ -38,9 +42,7 @@ kotlinOptions {
             signingConfig = signingConfigs.debug
         }
     }
-       lintOptions {                                                           │
-│     checkReleaseBuilds false                                              │
-│   }   
+      
 }
 dependencies {
  
