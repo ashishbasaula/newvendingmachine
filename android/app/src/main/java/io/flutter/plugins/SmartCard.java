@@ -31,28 +31,35 @@ public class SmartCard {
 
     public void listAvailableDevices(MethodChannel.Result result) {
         try {
+            Log.d(TAG, "Enumerating Devices");
             HashMap<String, UsbDevice> deviceList = usbManager.getDeviceList();
             List<String> availableDevices = new ArrayList<>();
             for (UsbDevice device : deviceList.values()) {
-                Log.d(TAG, String.format("Vendor ID: %s, Product ID: %s",
-                        Integer.toHexString(device.getVendorId()),
-                        Integer.toHexString(device.getProductId())));
+                Log.d(TAG, String.format("Vendor ID: %s, Product ID: %s", Integer.toHexString(device.getVendorId()), Integer.toHexString(device.getProductId())));
                 if (isAlcorReader(device)) {
+                    Log.d(TAG, "Found Device: " + device.getDeviceName());
                     availableDevices.add(device.getDeviceName() + "-" + Integer.toHexString(device.getProductId()));
                 }
             }
-            result.success(availableDevices);
+            if (availableDevices.isEmpty()) {
+                Log.d(TAG, "No Supported Reader Found");
+                result.success(new ArrayList<String>()); // return an empty list if no devices found
+            } else {
+                result.success(availableDevices);
+            }
         } catch (Exception e) {
+            Log.e(TAG, "Failed to list devices", e);
             result.error("DEVICE_ERROR", "Failed to list devices: " + e.getMessage(), null);
         }
     }
 
     private boolean isAlcorReader(UsbDevice device) {
-        int vendorId = device.getVendorId();
-        int productId = device.getProductId();
-        return (vendorId == 0x058f && (productId == 0x9540 || productId == 0x9520 || productId == 0x9522 || productId == 0x9525 || productId == 0x9526)) ||
-               (vendorId == 0x2CE3 && (productId == 0x9571 || productId == 0x9572 || productId == 0x9563 || productId == 0x9573 || productId == 0x9567));
-    }
+    int vendorId = device.getVendorId();
+    int productId = device.getProductId();
+    return (vendorId == 0x058f && (productId == 0x9540 || productId == 0x9520 || productId == 0x9522 || productId == 0x9525 || productId == 0x9526)) ||
+           (vendorId == 0x2CE3 && (productId == 0x9571 || productId == 0x9572 || productId == 0x9563 || productId == 0x9573 || productId == 0x9567));
+}
+
 
     public void getSelectedDevice(String deviceName, MethodChannel.Result result) {
         HashMap<String, UsbDevice> devices = usbManager.getDeviceList();
