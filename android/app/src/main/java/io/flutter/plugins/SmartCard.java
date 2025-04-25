@@ -11,7 +11,9 @@ import amlib.ccid.SCError;
 import amlib.ccid.ReaderException;
 import amlib.hw.HWType;
 import amlib.hw.ReaderHwException;
-import com.alcorlink.serialport.HardwareInterfaceSerial;
+import com.appAra.newVending.HardwareInterfaceSerial;
+import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbManager;
 
 public class SmartCard {
     private static final String TAG = "SmartCard";
