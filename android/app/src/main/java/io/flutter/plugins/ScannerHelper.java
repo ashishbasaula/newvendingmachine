@@ -77,10 +77,8 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
 
- 
-
 public class ScannerHelper {
-
+    private static final String TAG = "ScannerHelper";
     private static UsbService usbService;
     private static boolean isServiceBound = false;
 
@@ -89,56 +87,93 @@ public class ScannerHelper {
     }
 
     public static void startScan(Context context, ResultCallback callback) {
+        Log.d(TAG, "startScan called, isServiceBound: " + isServiceBound);
         if (!isServiceBound) {
-            Intent intent = new Intent(context, UsbService.class);
-            context.bindService(intent, serviceConnection(context, callback), Context.BIND_AUTO_CREATE);
+            Log.d(TAG, "Attempting to bind USB service");
+            try {
+                Intent intent = new Intent(context, UsbService.class);
+                boolean bindingResult = context.bindService(intent, serviceConnection(context, callback), Context.BIND_AUTO_CREATE);
+                Log.d(TAG, "Service binding result: " + bindingResult);
+            } catch (Exception e) {
+                Log.e(TAG, "Error binding service: " + e.getMessage(), e);
+                callback.onResult(null, "Error binding service: " + e.getMessage());
+            }
         } else {
+            Log.d(TAG, "Service already bound, setting up handler");
             setupHandler(callback);
         }
     }
 
     private static ServiceConnection serviceConnection(Context context, ResultCallback callback) {
+        Log.d(TAG, "Creating new ServiceConnection");
         return new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
-                usbService = ((UsbService.UsbBinder) service).getService();
-                isServiceBound = true;
-                setupHandler(callback);
-                Log.d("ScannerHelper", "USB Service connected");
+                Log.d(TAG, "onServiceConnected called with component: " + name);
+                try {
+                    usbService = ((UsbService.UsbBinder) service).getService();
+                    isServiceBound = true;
+                    Log.d(TAG, "USB Service successfully connected");
+                    setupHandler(callback);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error in onServiceConnected: " + e.getMessage(), e);
+                    callback.onResult(null, "Service connection error: " + e.getMessage());
+                }
             }
 
             @Override
             public void onServiceDisconnected(ComponentName name) {
+                Log.d(TAG, "onServiceDisconnected called with component: " + name);
                 usbService = null;
                 isServiceBound = false;
-                Log.d("ScannerHelper", "USB Service disconnected");
+                callback.onResult(null, "USB Service disconnected unexpectedly");
             }
         };
     }
 
     private static void setupHandler(ResultCallback callback) {
+        Log.d(TAG, "setupHandler called, usbService is " + (usbService != null ? "not null" : "null"));
         if (usbService != null) {
-            usbService.setHandler(new Handler(Looper.getMainLooper()) {
-                @Override
-                public void handleMessage(android.os.Message msg) {
-                    if (msg.obj != null) {
-                        String data = msg.obj.toString();
-                        callback.onResult(data, null);
-                    } else {
-                        callback.onResult(null, "Received empty data");
+            try {
+                Handler handler = new Handler(Looper.getMainLooper()) {
+                    @Override
+                    public void handleMessage(android.os.Message msg) {
+                        Log.d(TAG, "Handler received message: " + (msg != null ? msg.toString() : "null"));
+                        if (msg != null && msg.obj != null) {
+                            String data = msg.obj.toString();
+                            Log.d(TAG, "Received scan data: " + data);
+                            callback.onResult(data, null);
+                        } else {
+                            Log.w(TAG, "Received empty or null message");
+                            callback.onResult(null, "Received empty data");
+                        }
                     }
-                }
-            });
+                };
+                usbService.setHandler(handler);
+                Log.d(TAG, "Handler successfully set up");
+            } catch (Exception e) {
+                Log.e(TAG, "Error setting up handler: " + e.getMessage(), e);
+                callback.onResult(null, "Handler setup error: " + e.getMessage());
+            }
         } else {
+            Log.e(TAG, "USB Service not available when setting up handler");
             callback.onResult(null, "USB Service not available");
         }
     }
 
     public static void stopScan(Context context) {
+        Log.d(TAG, "stopScan called, isServiceBound: " + isServiceBound);
         if (isServiceBound) {
-            context.unbindService(serviceConnection(context, null));
-            isServiceBound = false;
-            Log.d("ScannerHelper", "Service unbound");
+            try {
+                context.unbindService(serviceConnection(context, null));
+                isServiceBound = false;
+                usbService = null;
+                Log.d(TAG, "Service successfully unbound");
+            } catch (Exception e) {
+                Log.e(TAG, "Error unbinding service: " + e.getMessage(), e);
+            }
+        } else {
+            Log.d(TAG, "Service not bound, nothing to unbind");
         }
     }
 }
