@@ -75,6 +75,20 @@ class _PaymentListState extends State<PaymentList> {
     }
   }
 
+  Future<void> initHardwareInterface() async {
+    try {
+      final result =
+          await platform.invokeMethod<String>('initHardwareInterface');
+      setState(() {
+        statusMessage = result;
+      });
+    } catch (e) {
+      setState(() {
+        statusMessage = "Error initializing interface: ${e.toString()}";
+      });
+    }
+  }
+
   Future<void> readCardDetails() async {
     try {
       final result = await platform.invokeMethod<String>('switchMode');
@@ -97,7 +111,7 @@ class _PaymentListState extends State<PaymentList> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Smart Card Payment Reader")),
+      appBar: AppBar(title: const Text("Smart Card Reader")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
@@ -106,51 +120,52 @@ class _PaymentListState extends State<PaymentList> {
             children: [
               ElevatedButton(
                 onPressed: listDevices,
-                child: const Text("Refresh Device List"),
+                child: const Text("Refresh Devices"),
               ),
               const SizedBox(height: 16),
-              if (devices.isNotEmpty)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Select Device:",
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                    DropdownButton<String>(
-                      hint: const Text("Select Device"),
-                      value: selectedDevice,
-                      isExpanded: true,
-                      items: devices.map((device) {
-                        return DropdownMenuItem(
-                            value: device, child: Text(device));
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) selectDevice(value);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    const Text("Select Reader Mode:",
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                    DropdownButton<int>(
-                      hint: const Text("Select Reader Mode"),
-                      value: selectedModeIndex,
-                      isExpanded: true,
-                      items: readerModes.entries.map((entry) {
-                        return DropdownMenuItem(
-                          value: entry.key,
-                          child: Text("${entry.key} - ${entry.value}"),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) setReaderMode(value);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: readCardDetails,
-                      child: const Text("Read Card Details"),
-                    ),
-                  ],
+              if (devices.isNotEmpty) ...[
+                const Text("Select Device:"),
+                DropdownButton<String>(
+                  isExpanded: true,
+                  hint: const Text("Choose USB device"),
+                  value: selectedDevice,
+                  items: devices.map((device) {
+                    return DropdownMenuItem(
+                      value: device,
+                      child: Text(device),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) selectDevice(value);
+                  },
                 ),
+                const SizedBox(height: 16),
+                const Text("Select Reader Mode:"),
+                DropdownButton<int>(
+                  isExpanded: true,
+                  hint: const Text("Choose reader mode"),
+                  value: selectedModeIndex,
+                  items: readerModes.entries.map((entry) {
+                    return DropdownMenuItem(
+                      value: entry.key,
+                      child: Text("${entry.key} - ${entry.value}"),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) setReaderMode(value);
+                  },
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: initHardwareInterface,
+                  child: const Text("Initialize Hardware"),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: readCardDetails,
+                  child: const Text("Read Card Details"),
+                ),
+              ],
               const SizedBox(height: 24),
               if (statusMessage != null)
                 Text(

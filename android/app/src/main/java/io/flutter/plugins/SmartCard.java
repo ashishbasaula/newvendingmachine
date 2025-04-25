@@ -4,21 +4,25 @@ import android.content.Context;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
 import io.flutter.plugin.common.MethodChannel;
 import amlib.ccid.Reader;
 import amlib.hw.HardwareInterface;
+import amlib.hw.HardwareInterfaceSerial;
 import amlib.hw.HWType;
 
 public class SmartCard {
     private static final String TAG = "SmartCard";
-    private Context context;
+    private final Context context;
     private UsbManager usbManager;
-    public UsbDevice _selectedDevice;
+    private UsbDevice _selectedDevice;
     private int currentMode;
-    private HardwareInterface hardwareInterface;
+
+    private HardwareInterfaceSerial hardwareInterface;
 
     public SmartCard(Context context) {
         this.context = context;
@@ -30,7 +34,9 @@ public class SmartCard {
             HashMap<String, UsbDevice> deviceList = usbManager.getDeviceList();
             List<String> availableDevices = new ArrayList<>();
             for (UsbDevice device : deviceList.values()) {
-                Log.d(TAG, String.format("Vendor ID: %s, Product ID: %s", Integer.toHexString(device.getVendorId()), Integer.toHexString(device.getProductId())));
+                Log.d(TAG, String.format("Vendor ID: %s, Product ID: %s",
+                        Integer.toHexString(device.getVendorId()),
+                        Integer.toHexString(device.getProductId())));
                 if (isAlcorReader(device)) {
                     availableDevices.add(device.getDeviceName() + "-" + Integer.toHexString(device.getProductId()));
                 }
@@ -48,12 +54,6 @@ public class SmartCard {
                (vendorId == 0x2CE3 && (productId == 0x9571 || productId == 0x9572 || productId == 0x9563 || productId == 0x9573 || productId == 0x9567));
     }
 
-    public int chooseReaderMode(int index, MethodChannel.Result result) {
-        currentMode = index;
-        result.success("Reader Set Successfully");
-        return currentMode;
-    }
-
     public void getSelectedDevice(String deviceName, MethodChannel.Result result) {
         HashMap<String, UsbDevice> devices = usbManager.getDeviceList();
         for (UsbDevice device : devices.values()) {
@@ -66,57 +66,73 @@ public class SmartCard {
         result.error("DEVICE_NOT_FOUND", "Selected device not found", null);
     }
 
+    public int chooseReaderMode(int index, MethodChannel.Result result) {
+        currentMode = index;
+        result.success("Reader Mode Set Successfully");
+        return currentMode;
+    }
+
     public void initHardwareInterface(MethodChannel.Result result) {
         try {
             if (_selectedDevice == null) {
-                result.error("NO_DEVICE", "Device not selected", null);
+                result.error("NO_DEVICE", "No device selected", null);
                 return;
             }
-            hardwareInterface = new HardwareInterface(HWType.eUSB, context.getApplicationContext());
+
+            hardwareInterface = new HardwareInterfaceSerial(HWType.eUSB);
             boolean initialized = hardwareInterface.Init(usbManager, _selectedDevice);
             if (!initialized) {
                 result.error("INIT_FAILED", "Failed to initialize hardware interface", null);
                 return;
             }
-            result.success("HardwareInterface initialized");
+
+            result.success("HardwareInterface initialized successfully");
         } catch (Exception e) {
-            result.error("INIT_ERROR", "Exception: " + e.getMessage(), null);
+            result.error("INIT_ERROR", "Exception during initialization: " + e.getMessage(), null);
         }
     }
 
     public void switchMode(MethodChannel.Result result) {
         try {
             if (hardwareInterface == null) {
-                result.error("NOT_INITIALIZED", "HardwareInterface not initialized", null);
+                result.error("NOT_INITIALIZED", "Hardware interface not initialized", null);
                 return;
             }
 
             Reader reader = new Reader(hardwareInterface);
-            reader.SetCardType(currentMode);
+            reader.setSlot((byte) 0);
+            int openStatus = reader.open();
 
-            byte[] atr = new byte[64];
-            int[] atrLen = new int[1];
-            int powerStatus = reader.PowerOn(0, atr, atrLen);
-            if (powerStatus != 0) {
-                result.error("CARD_FAIL", "Could not power on the card", null);
+            if (openStatus != 0) {
+                result.error("READER_OPEN_FAIL", "Reader open failed with status: " + openStatus, null);
                 return;
             }
 
+            int powerStatus = reader.setPower(Reader.CCID_POWERON);
+            if (powerStatus != 0) {
+                result.error("CARD_POWER_FAIL", "Failed to power on card", null);
+                return;
+            }
+
+            // SELECT AID
             byte[] select = hexStringToByteArray("00A404000E315041592E5359532E4444463031");
             byte[] recv = new byte[300];
-            int[] recvLen = new int[1];
-            int selectStatus = reader.Transmit(0, select, select.length, recv, recvLen);
+            int[] recvLen = new int[]{300};
+
+            int selectStatus = reader.transmit(select, select.length, recv, recvLen);
             if (selectStatus != 0) {
-                result.error("APDU_FAIL", "Failed SELECT AID", null);
+                result.error("SELECT_AID_FAIL", "Failed to SELECT AID", null);
                 return;
             }
 
+            // READ RECORD
             byte[] readRecord = hexStringToByteArray("00B2010C00");
             recv = new byte[300];
-            recvLen[0] = 0;
-            int readStatus = reader.Transmit(0, readRecord, readRecord.length, recv, recvLen);
+            recvLen[0] = 300;
+
+            int readStatus = reader.transmit(readRecord, readRecord.length, recv, recvLen);
             if (readStatus != 0) {
-                result.error("APDU_FAIL", "Failed READ RECORD", null);
+                result.error("READ_RECORD_FAIL", "Failed to READ RECORD", null);
                 return;
             }
 
@@ -125,7 +141,7 @@ public class SmartCard {
             result.success("Card Details: " + cardDetails);
 
         } catch (Exception e) {
-            result.error("EXCEPTION", "Exception: " + e.getMessage(), null);
+            result.error("EXCEPTION", "Exception during card operation: " + e.getMessage(), null);
         }
     }
 
@@ -134,7 +150,7 @@ public class SmartCard {
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
             data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i+1), 16));
+                                + Character.digit(s.charAt(i + 1), 16));
         }
         return data;
     }
