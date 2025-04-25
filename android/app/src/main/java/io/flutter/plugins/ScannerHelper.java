@@ -135,11 +135,13 @@ public class ScannerHelper {
     }
 
     private static void requestUsbPermission(UsbManager usbManager, UsbDevice device) {
+              Log.d(TAG, "Requesting for the permission ");
         if (usbPermissionReceiver != null) {
             try {
                 appContext.unregisterReceiver(usbPermissionReceiver);
             } catch (IllegalArgumentException e) {
                 // Receiver wasn't registered, ignore
+                  Log.d(TAG, "failed to requiest the permission");
             }
         }
 
