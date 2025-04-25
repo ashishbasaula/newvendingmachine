@@ -198,7 +198,7 @@ class MainActivity: FlutterActivity() {
 
      override fun onDestroy() {
         super.onDestroy()
-        ScannerHelper.cleanup();
+        // ScannerHelper.cleanup();
         if (this::driver.isInitialized) {
             this.driver.EF_CloseDev()
         }
