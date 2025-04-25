@@ -150,6 +150,12 @@ class _DashboardPageState extends State<DashboardPage> {
                 },
                 child: Text("Scan bar code ")),
 
+            ElevatedButton(
+                onPressed: () async {
+                  Get.to(() => const PaymentList());
+                },
+                child: Text("Payment List")),
+
             Obx(() {
               if (!helperController.isUserIdLoaded.value) {
                 return const SizedBox.shrink();
