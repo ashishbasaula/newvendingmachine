@@ -90,7 +90,7 @@ public class ScannerHelper {
     private static final String ACTION_USB_PERMISSION = "io.flutter.plugins.USB_PERMISSION";
     private static final String TAG = "ScannerHelper";
     
-    // Device VID/PID pairs from your logs
+    // Supported devices
     private static final int[][] SUPPORTED_DEVICES = {
         {11491, 38247},  // First device
         {5418, 34831}    // Second device
@@ -109,14 +109,16 @@ public class ScannerHelper {
         UsbDevice device = findSupportedDevice(usbManager);
 
         if (device == null) {
-            callback.onResult(null, "Supported USB device not found");
+            Log.e(TAG, "No supported USB device found");
+            callback.onResult(null, "Scanner not connected");
             return;
         }
 
         if (usbManager.hasPermission(device)) {
-              Log.d(TAG, "Permission Granted and move toward the scan");
+            Log.d(TAG, "Permission already granted, starting scan");
             setupAndStartScan();
         } else {
+            Log.d(TAG, "Requesting USB permission");
             requestUsbPermission(usbManager, device);
         }
     }
@@ -126,8 +128,8 @@ public class ScannerHelper {
             for (int[] supportedDevice : SUPPORTED_DEVICES) {
                 if (device.getVendorId() == supportedDevice[0] && 
                     device.getProductId() == supportedDevice[1]) {
-                    Log.d(TAG, "Found supported device: VID=" + supportedDevice[0] + 
-                          " PID=" + supportedDevice[1]);
+                    Log.d(TAG, "Found supported device: " + device.getDeviceName() + 
+                          " VID=" + supportedDevice[0] + " PID=" + supportedDevice[1]);
                     return device;
                 }
             }
@@ -136,13 +138,12 @@ public class ScannerHelper {
     }
 
     private static void requestUsbPermission(UsbManager usbManager, UsbDevice device) {
-              Log.d(TAG, "Requesting for the permission ");
+        // Clean up any existing receiver
         if (usbPermissionReceiver != null) {
             try {
                 appContext.unregisterReceiver(usbPermissionReceiver);
             } catch (IllegalArgumentException e) {
-                // Receiver wasn't registered, ignore
-                  Log.d(TAG, "failed to requiest the permission");
+                Log.w(TAG, "Receiver already unregistered");
             }
         }
 
@@ -154,76 +155,97 @@ public class ScannerHelper {
                         UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                         if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                             if (device != null) {
+                                Log.d(TAG, "USB permission granted for: " + device.getDeviceName());
                                 setupAndStartScan();
                             }
                         } else {
-                            currentCallback.onResult(null, "USB permission denied for device: " + 
-                                device.getDeviceName());
+                            String error = "USB permission denied for: " + 
+                                        (device != null ? device.getDeviceName() : "null device");
+                            Log.e(TAG, error);
+                            currentCallback.onResult(null, error);
                         }
-                        try {
-                            appContext.unregisterReceiver(this);
-                        } catch (IllegalArgumentException e) {
-                            // Ignore if already unregistered
-                        }
-                        usbPermissionReceiver = null;
+                        cleanup();
                     }
                 }
             }
         };
 
-        IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
-        appContext.registerReceiver(usbPermissionReceiver, filter);
+        try {
+            IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+            appContext.registerReceiver(usbPermissionReceiver, filter);
 
-        PendingIntent permissionIntent = PendingIntent.getBroadcast(
-            appContext, 
-            0, 
-            new Intent(ACTION_USB_PERMISSION),
-            PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
-        );
-        usbManager.requestPermission(device, permissionIntent);
+            PendingIntent permissionIntent = PendingIntent.getBroadcast(
+                appContext, 
+                0, 
+                new Intent(ACTION_USB_PERMISSION),
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+            );
+            usbManager.requestPermission(device, permissionIntent);
+            Log.d(TAG, "USB permission request sent");
+        } catch (Exception e) {
+            Log.e(TAG, "Error requesting USB permission", e);
+            currentCallback.onResult(null, "Failed to request USB permission");
+            cleanup();
+        }
     }
 
     private static void setupAndStartScan() {
+        Log.d(TAG, "Setting up serial port and starting scan");
+        
         listener = new SerialPortDataListener() {
             @Override
             public void onDataReceived(byte status, String dataMessage) {
+                Log.d(TAG, "Scan result received: " + dataMessage);
                 currentCallback.onResult(dataMessage, null);
                 SerialPortManager.getInstance().closeSerialPort();
+                cleanup();
             }
 
             @Override
             public void onOriginalDataReceived(byte status, byte[] bytes, int length) {
-                // Optional raw data handling
+                Log.d(TAG, "Raw data received, length: " + length);
             }
         };
 
-        SerialPortManager.getInstance().openSerialPort(appContext, new SerialPortOpenListener() {
-            @Override
-            public void onConnectStatusChange(int status) {
-                switch (status) {
-                    case ACTION_USB_PERMISSION_GRANTED:
-                        SerialPortManager.getInstance().scanTrigger(actionStatus -> {
-                            Log.d(TAG, "Scan trigger status: " + actionStatus);
-                        });
-                        break;
-                    case ACTION_USB_PERMISSION_NOT_GRANTED:
-                        currentCallback.onResult(null, "USB permission not granted");
-                        break;
-                    case ACTION_NO_USB:
-                        currentCallback.onResult(null, "No USB device connected");
-                        break;
-                    case ACTION_USB_DISCONNECTED:
-                        currentCallback.onResult(null, "USB device disconnected");
-                        break;
-                    case ACTION_USB_NOT_SUPPORTED:
-                        currentCallback.onResult(null, "USB device not supported");
-                        break;
-                    default:
-                        currentCallback.onResult(null, "Unknown USB status: " + status);
-                        break;
+        try {
+            SerialPortManager.getInstance().openSerialPort(appContext, new SerialPortOpenListener() {
+                @Override
+                public void onConnectStatusChange(int status) {
+                    switch (status) {
+                        case ACTION_USB_PERMISSION_GRANTED:
+                            Log.d(TAG, "Serial port opened, triggering scan");
+                            SerialPortManager.getInstance().scanTrigger(actionStatus -> {
+                                Log.d(TAG, "Scan trigger result: " + actionStatus);
+                                if (actionStatus != 0) {
+                                    currentCallback.onResult(null, "Scan trigger failed with status: " + actionStatus);
+                                    cleanup();
+                                }
+                            });
+                            break;
+                        case ACTION_USB_PERMISSION_NOT_GRANTED:
+                            currentCallback.onResult(null, "USB permission not granted");
+                            break;
+                        case ACTION_NO_USB:
+                            currentCallback.onResult(null, "No USB device connected");
+                            break;
+                        case ACTION_USB_DISCONNECTED:
+                            currentCallback.onResult(null, "USB device disconnected");
+                            break;
+                        case ACTION_USB_NOT_SUPPORTED:
+                            currentCallback.onResult(null, "USB device not supported");
+                            break;
+                        default:
+                            currentCallback.onResult(null, "Unknown USB status: " + status);
+                            break;
+                    }
+                    cleanup();
                 }
-            }
-        }, listener);
+            }, listener);
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening serial port", e);
+            currentCallback.onResult(null, "Failed to open serial port");
+            cleanup();
+        }
     }
 
     public interface ResultCallback {
@@ -231,11 +253,12 @@ public class ScannerHelper {
     }
 
     public static void cleanup() {
+        Log.d(TAG, "Cleaning up resources");
         if (usbPermissionReceiver != null) {
             try {
                 appContext.unregisterReceiver(usbPermissionReceiver);
             } catch (IllegalArgumentException e) {
-                // Ignore if already unregistered
+                Log.w(TAG, "Receiver already unregistered");
             }
             usbPermissionReceiver = null;
         }
