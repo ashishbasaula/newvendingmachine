@@ -51,7 +51,9 @@
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true"
         >
-        <service android:name="com.appAra.newVending.UsbService"/>
+        <service android:name=".UsbService"
+        android:exported="false"
+        />
         <activity
             android:name=".MainActivity"
             android:exported="true"
