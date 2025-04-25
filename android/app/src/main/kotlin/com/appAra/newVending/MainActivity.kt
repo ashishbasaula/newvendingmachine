@@ -188,10 +188,7 @@ class MainActivity: FlutterActivity() {
                         result.error("SCAN_FAILED", e.message, null)
                     }
                 }
-                "readCardDetails" -> {
-        
-            smartCard.readCard(result)
-        }
+            
                 else -> {
                     result.notImplemented()
                 }
