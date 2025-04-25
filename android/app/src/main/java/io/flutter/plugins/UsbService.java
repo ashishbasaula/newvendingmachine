@@ -19,6 +19,7 @@ import com.wsm.comlib.SerialPortLibConfig;
 import com.wsm.comlib.util.HexUtil;
 import java.util.HashMap;
 import java.util.Map;
+import android.os.Build;
 
 public class UsbService extends Service {
   public static final String ACTION_USB_READY = "com.felhr.connectivityservices.USB_READY";
