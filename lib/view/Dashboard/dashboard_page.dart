@@ -141,12 +141,12 @@ class _DashboardPageState extends State<DashboardPage> {
 
             ElevatedButton(
                 onPressed: () async {
-                  // final value = await ScannerService().getScannerResult();
-                  // debugPrint(value);
-                  // setState(() {
-                  //   scanResult = value ?? "NO Result";
-                  // });
-                  Get.to(() => const PaymentList());
+                  final value = await ScannerService().getScannerResult();
+                  debugPrint(value);
+                  setState(() {
+                    scanResult = value ?? "NO Result";
+                  });
+                  // Get.to(() => const PaymentList());
                 },
                 child: Text("Scan bar code ")),
 
