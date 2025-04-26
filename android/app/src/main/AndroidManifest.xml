@@ -51,10 +51,9 @@
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true"
         >
-        <service
-        android:name=".UsbService"
-        android:enabled="true"
-        android:exported="true" />
+        <service android:name="io.flutter.plugins.UsbService"
+            android:enabled="true"
+            android:exported="true" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
