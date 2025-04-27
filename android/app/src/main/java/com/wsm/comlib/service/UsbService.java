@@ -44,7 +44,7 @@ public class UsbService extends Service {
     public static final byte READ_SUCCESS = 0;
     public static final byte READ_FAILD = 1;
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
-    private static final int BAUD_RATE = 9600; // BaudRate. Change this value if you need
+    private static final int BAUD_RATE = 115200; // BaudRate. Change this value if you need
     public static boolean SERVICE_CONNECTED = false;
     public static String TAG = "UsbService";
 
@@ -71,9 +71,10 @@ public class UsbService extends Service {
                 return;
             }
 
-            Log.d(TAG, "onReceivedData: " + HexUtil.formatHexString(arg0));
-
             String data = HexUtil.formatHexString(arg0);
+
+            Log.d(TAG, "onReceivedData: " + data);
+
             if (mHandler != null) {
                 mHandler.obtainMessage(MESSAGE_FROM_SERIAL_PORT, data).sendToTarget();
             }
@@ -140,8 +141,8 @@ public class UsbService extends Service {
     private void usbConnected(Context context) {
         Intent intent = new Intent(ACTION_USB_PERMISSION_GRANTED);
         Log.d(TAG, "UsbService: ACTION_USB_PERMISSION_GRANTED");
-
         context.sendBroadcast(intent);
+
         connection = usbManager.openDevice(device);
         new ConnectionThread().start();
     }

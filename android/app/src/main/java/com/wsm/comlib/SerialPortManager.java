@@ -61,7 +61,8 @@ public class SerialPortManager {
     private String mDeviceInfoType = null;
     private SerialPortDeviceInfoListener mSerialPortDeviceInfoListener;
     private SerialPortServiceConnectionListener mSerialPortServiceConnectionListener;
-
+    private boolean awaitingScan = false;
+    private SerialPortScanTriggerListener tempScanTriggerListener = null;
 
     public static SerialPortManager getInstance() {
         synchronized (SerialPortManager.class) {
@@ -110,7 +111,6 @@ public class SerialPortManager {
      * 关闭USB通讯
      */
     public void closeSerialPort() {
-
         if (mContext == null) {
             BleLog.d("服务销毁 mContext null");
             return;
@@ -226,6 +226,13 @@ public class SerialPortManager {
             Log.d(TAG, "USB service connected");
             usbService = ((UsbService.UsbBinder) arg1).getService();
             usbService.setHandler(mHandler);
+
+            if (awaitingScan && tempScanTriggerListener != null) {
+                scanTrigger(tempScanTriggerListener);
+                awaitingScan = false;
+                tempScanTriggerListener = null;
+            }
+
             if (mSerialPortServiceConnectionListener != null) {
                 mSerialPortServiceConnectionListener.onServiceConnected(arg0, arg1);
             }
@@ -348,13 +355,18 @@ public class SerialPortManager {
         mSerialPortScanTriggerListener = serialPortScanTriggerListener;
         String getSN = "7E00080100020102DA";
         CMDMODE = SCANTRIGGER;
-        Log.d(TAG, "scanTrigger: " + getSN);
 
         if (usbService != null) {
+            Log.d(TAG, "scanTrigger: " + getSN);
             usbService.write(HexUtil.hexStringToBytes(getSN));
-        }
-        if (mHandler != null) {
-            mHandler.sendEmptyMessageDelayed(MSG_SCAN_TRIGGER, SerialPortLibConfig.timelone);
+
+            if (mHandler != null) {
+                mHandler.sendEmptyMessageDelayed(MSG_SCAN_TRIGGER, SerialPortLibConfig.timelone);
+            }
+        } else {
+            awaitingScan = true;
+            tempScanTriggerListener = serialPortScanTriggerListener;
+            Log.d(TAG, "scanTrigger failed: waiting for usbService");
         }
     }
 
@@ -385,7 +397,7 @@ public class SerialPortManager {
                     }
                     String data1 = (String) msg.obj;
                     if (data1 != null) {
-                        Log.d(TAG, "handleMessage MSG_CHANGE_TRIGGER: " + data1);
+                        Log.d(TAG, "handleMessage MSG_SCAN_TRIGGER: " + data1);
                     }
 
                     break;
@@ -393,7 +405,7 @@ public class SerialPortManager {
 
                 case UsbService.MESSAGE_FROM_SERIAL_PORT:
                     String data = (String) msg.obj;
-                    Log.d(TAG, "MESSAGE_FROM_SERIAL_PORT  handleMessage: " + data);
+                    Log.d(TAG, "MESSAGE_FROM_SERIAL_PORT handleMessage: " + data);
                     if (CMDMODE == CHANGETRIGGER && data.toUpperCase().startsWith("02000001D")) {
                         String SN2 = "7E0008010000";
                         byte[] bytes = HexUtil.hexStringToBytes(data);

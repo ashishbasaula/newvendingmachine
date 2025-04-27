@@ -76,6 +76,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
+import java.util.Arrays;
 
 import com.wsm.comlib.SerialPortLibConfig;
 import com.wsm.comlib.SerialPortManager;
@@ -140,7 +141,7 @@ public class ScannerHelper {
 
             @Override
             public void onOriginalDataReceived(byte status, byte[] bytes, int length) {
-                // optional
+                Log.d(TAG, "onOriginalDataReceived: " + Arrays.toString(bytes));
             }
         };
 
@@ -212,6 +213,9 @@ public class ScannerHelper {
                     mSerialPortServiceConnectionListener);
         } else {
             Log.d(TAG, "Serial port already open");
+            SerialPortManager.getInstance().scanTrigger(actionStatus -> {
+                Log.d(TAG, "USB scan triggered actionStatus: " + actionStatus);
+            });
         }
     }
 
