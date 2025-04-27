@@ -82,9 +82,11 @@ import com.wsm.comlib.SerialPortManager;
 import com.wsm.comlib.callback.SerialPortChangeTriggerListener;
 import com.wsm.comlib.callback.SerialPortDataListener;
 import com.wsm.comlib.callback.SerialPortOpenListener;
+import com.wsm.comlib.callback.SerialPortServiceConnectionListener;
 import com.wsm.comlib.callback.SerialPortDeviceInfoListener;
 import com.wsm.comlib.callback.SerialPortScanTriggerListener;
 import com.wsm.comlib.constant.FormatConstant;
+import com.wsm.comlib.service.UsbService;
 import com.wsm.comlib.util.HexUtil;
 
 import static com.wsm.comlib.constant.ConnectCostant.ACTION_NO_USB;
@@ -95,6 +97,7 @@ import static com.wsm.comlib.constant.ConnectCostant.ACTION_USB_PERMISSION_NOT_G
 
 public class ScannerHelper {
     private static final String TAG = "ScannerHelper";
+    private static ServiceConnection mServiceConnection;
     private static UsbService usbService;
     private static boolean isServiceBound = false;
 
@@ -104,27 +107,33 @@ public class ScannerHelper {
 
     public static void startScan(Context context, ResultCallback callback) {
         Log.d(TAG, "startScan called, isServiceBound: " + isServiceBound);
-        if (!isServiceBound) {
-            Log.d(TAG, "Attempting to bind USB service");
-            try {
-                Intent intent = new Intent(context.getApplicationContext(), UsbService.class);
-                boolean bindingResult = context.getApplicationContext().bindService(intent, serviceConnection(context, callback), Context.BIND_AUTO_CREATE);
-                Log.d(TAG, "Service binding result: " + bindingResult);
-            } catch (Exception e) {
-                Log.e(TAG, "Error binding service: " + e.getMessage(), e);
-                callback.onResult(null, "Error binding service: " + e.getMessage());
-            }
-        } else {
-            Log.d(TAG, "Service already bound, setting up handler");
-            openSerialPort(context, callback);
-            setupHandler(callback);
-        }
+//        if (!isServiceBound) {
+//            Log.d(TAG, "Attempting to bind USB service");
+//            try {
+//                Intent intent = new Intent(context.getApplicationContext(), UsbService.class);
+//                if (mServiceConnection == null) {
+//                    mServiceConnection = serviceConnection(context, callback);
+//                }
+//                boolean bindingResult = context.getApplicationContext().bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
+//                Log.d(TAG, "Service binding result: " + bindingResult);
+//            } catch (Exception e) {
+//                Log.e(TAG, "Error binding service: " + e.getMessage(), e);
+//                callback.onResult(null, "Error binding service: " + e.getMessage());
+//            }
+//        } else {
+//            Log.d(TAG, "Service already bound, setting up handler");
+//            openSerialPort(context, callback);
+//            setupHandler(callback);
+//        }
+        openSerialPort(context, callback);
+//        setupHandler(callback);
     }
 
     private static void openSerialPort(Context context, ResultCallback callback) {
         SerialPortDataListener mSerialPortDataListener = new SerialPortDataListener() {
             @Override
             public void onDataReceived(byte status, String dataMessage) {
+                Log.d(TAG, "onDataReceived: " + dataMessage);
                 callback.onResult(dataMessage, null);
                 SerialPortManager.getInstance().closeSerialPort(); // optional
             }
@@ -138,39 +147,40 @@ public class ScannerHelper {
         SerialPortOpenListener mSerialPortOpenListener = new SerialPortOpenListener() {
             @Override
             public void onConnectStatusChange(int status) {
+                Log.d(TAG, "onConnectStatusChange status: " + status);
                 switch (status) {
                     case ACTION_USB_PERMISSION_GRANTED:
+                        Log.d(TAG, "USB permission granted");
                         // USB ready, now trigger scan
                         SerialPortManager.getInstance().scanTrigger(actionStatus -> {
-                            // optionally log
+                            Log.d(TAG, "USB scan triggered actionStatus: " + actionStatus);
                         });
                         break;
                     case ACTION_USB_PERMISSION_NOT_GRANTED:
+                        Log.d(TAG,  "USB permission not granted");
                         callback.onResult(null, "USB permission not granted");
                         break;
                     case ACTION_NO_USB:
+                        Log.d(TAG, "No USB connected");
                         callback.onResult(null, "No USB connected");
                         break;
                     case ACTION_USB_DISCONNECTED:
+                        Log.d(TAG, "USB disconnected");
                         callback.onResult(null, "USB disconnected");
                         break;
                     case ACTION_USB_NOT_SUPPORTED:
+                        Log.d(TAG, "USB not supported");
                         callback.onResult(null, "USB not supported");
                         break;
                     default:
+                        Log.d(TAG, "Unknown USB status");
                         callback.onResult(null, "Unknown USB status");
                         break;
                 }
             }
         };
 
-        Log.d(TAG, "Opening serial port...");
-        SerialPortManager.getInstance().openSerialPort(context, mSerialPortOpenListener, mSerialPortDataListener);
-    }
-
-    private static ServiceConnection serviceConnection(Context context, ResultCallback callback) {
-        Log.d(TAG, "Creating new ServiceConnection");
-        return new ServiceConnection() {
+        SerialPortServiceConnectionListener mSerialPortServiceConnectionListener = new SerialPortServiceConnectionListener() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
                 Log.d(TAG, "onServiceConnected called with component: " + name);
@@ -178,7 +188,6 @@ public class ScannerHelper {
                     usbService = ((UsbService.UsbBinder) service).getService();
                     isServiceBound = true;
                     Log.d(TAG, "USB Service successfully connected");
-                    openSerialPort(context, callback);
                     setupHandler(callback);
                 } catch (Exception e) {
                     Log.e(TAG, "Error in onServiceConnected: " + e.getMessage(), e);
@@ -194,6 +203,16 @@ public class ScannerHelper {
                 callback.onResult(null, "USB Service disconnected unexpectedly");
             }
         };
+
+        if (usbService == null || !usbService.isSerialPortConnected()) {
+            Log.d(TAG, "Opening serial port...");
+            SerialPortManager.getInstance().openSerialPort(context,
+                    mSerialPortOpenListener,
+                    mSerialPortDataListener,
+                    mSerialPortServiceConnectionListener);
+        } else {
+            Log.d(TAG, "Serial port already open");
+        }
     }
 
     private static void setupHandler(ResultCallback callback) {
@@ -230,10 +249,13 @@ public class ScannerHelper {
         Log.d(TAG, "stopScan called, isServiceBound: " + isServiceBound);
         if (isServiceBound) {
             try {
-                context.unbindService(serviceConnection(context, null));
-                isServiceBound = false;
-                usbService = null;
-                Log.d(TAG, "Service successfully unbound");
+                if (mServiceConnection != null) {
+                    context.getApplicationContext().unbindService(mServiceConnection);
+                    mServiceConnection = null;
+                    usbService = null;
+                    isServiceBound = false;
+                    Log.d(TAG, "Service successfully unbound");
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error unbinding service: " + e.getMessage(), e);
             }

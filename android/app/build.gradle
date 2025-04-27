@@ -52,7 +52,7 @@ dependencies {
     implementation files('libs/zckjAPI-2.2.jar')
     implementation files('libs/ysapi.jar')
     implementation files('libs/SmartCardLib.jar')
-    implementation files('libs/serialport_v100.jar')
+    implementation files('libs/usbserial_v4.5.2.jar')
 
 
 

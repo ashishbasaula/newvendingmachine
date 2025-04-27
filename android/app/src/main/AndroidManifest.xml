@@ -45,22 +45,23 @@
     <uses-permission android:name="android.permission.USB_PERMISSION"/>
 
     <uses-feature android:name="android.hardware.usb.host" android:required="true"/>
+
     <application
         android:label="newvendingmachine"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true"
         >
-        <service android:name="io.flutter.plugins.UsbService"
-            android:enabled="true"
-            android:exported="true" />
+        <service android:name="com.wsm.comlib.service.UsbService" />
         <activity
             android:name=".MainActivity"
+            android:enabled="true"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:directBootAware="true"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
             <!-- Specifies an Android theme to apply to this Activity as soon as
@@ -75,6 +76,11 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            <meta-data android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+              android:resource="@xml/device_filter" />
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
