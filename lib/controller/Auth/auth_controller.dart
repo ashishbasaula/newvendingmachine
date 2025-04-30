@@ -2,10 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:newvendingmachine/Services/local_storage_services.dart';
+import 'package:newvendingmachine/controller/Device/setting_controller.dart';
 import 'package:newvendingmachine/utils/message_utils.dart';
 import 'package:newvendingmachine/view/Dashboard/dashboard_page.dart';
 
 class AuthController extends GetxController {
+  final settingController = Get.find<SettingController>();
   Future<void> userAuth() async {
     SmartDialog.showLoading(msg: "Authenticating....");
     String deviceId = getDeviceProductId(); // get the device product id
@@ -36,7 +38,9 @@ class AuthController extends GetxController {
   }
 
   String getDeviceProductId() {
-    // Replace with actual logic to get the product ID
+// in production replace with actual serial number
+    // final serialNumber = settingController.serialNumber.value; // use this in production
+
     return "asdasdasdaddasdad";
   }
 }

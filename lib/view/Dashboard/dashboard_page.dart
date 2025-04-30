@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:newvendingmachine/Services/local_storage_services.dart';
 import 'package:newvendingmachine/Services/scanner_service.dart';
 import 'package:newvendingmachine/controller/Ads/ads_controller.dart';
 import 'package:newvendingmachine/controller/Helper/device_ui_helper.dart';
@@ -10,6 +10,7 @@ import 'package:newvendingmachine/controller/cart/cart_controller.dart';
 import 'package:newvendingmachine/controller/items/items_controller.dart';
 import 'package:newvendingmachine/module/user_items_model.dart';
 import 'package:newvendingmachine/utils/padding_utils.dart';
+import 'package:newvendingmachine/view/Auth/login_screen.dart';
 import 'package:newvendingmachine/view/Dashboard/components/banner_component.dart';
 import 'package:newvendingmachine/view/Dashboard/components/purchase_description.dart';
 import 'package:newvendingmachine/view/Payment/payment_list.dart';
@@ -76,7 +77,13 @@ class _DashboardPageState extends State<DashboardPage> {
                       }
 
                       if (snapshot.hasData && !snapshot.data!.exists) {
-                        return const Text("Document does not exist");
+                        return GestureDetector(
+                            onTap: () {
+                              LocalStorageServices.storeUserLoginStatus(
+                                  isLogin: false);
+                              Get.offAll(() => const LoginScreen());
+                            },
+                            child: const Text("Document does not exist"));
                       }
 
                       if (snapshot.connectionState == ConnectionState.done) {
@@ -85,6 +92,9 @@ class _DashboardPageState extends State<DashboardPage> {
                         return GestureDetector(
                           onTap: () {
                             // machineInfoController.getMachineInformation();
+                            LocalStorageServices.storeUserLoginStatus(
+                                isLogin: false);
+                            Get.offAll(() => const LoginScreen());
                           },
                           child: Text(
                             data['serialNumber'] ?? "",
@@ -183,11 +193,31 @@ class _DashboardPageState extends State<DashboardPage> {
                     }
 
                     // Parse Firestore data into a list (assuming ItemsModel exists)
-                    List<UserItemModel> drinkItems =
-                        snapshot.data!.docs.map((doc) {
+                    // List<UserItemModel> drinkItems =
+                    //     snapshot.data!.docs.map((doc) {
+                    //       if (doc.data()!['inventoryThreshold']!=0) {
+
+                    //       }
+                    //   final docId = doc.id;
+                    //   return UserItemModel.fromFirestore(
+                    //       doc.data() as Map<String, dynamic>, docId);
+                    // }).toList();
+
+                    List<UserItemModel> drinkItems = snapshot.data!.docs
+                        .where((doc) =>
+                            (doc.data() as Map<String, dynamic>)[
+                                    'inventoryThreshold'] !=
+                                0 &&
+                            (doc.data() as Map<String, dynamic>)['channelNo'] !=
+                                null)
+                        .map((doc) {
+                      final docId = doc.id;
                       return UserItemModel.fromFirestore(
-                          doc.data() as Map<String, dynamic>);
+                          doc.data() as Map<String, dynamic>, docId);
                     }).toList();
+                    if (drinkItems.isEmpty) {
+                      return const Center(child: Text("Items is  Empty .."));
+                    }
 
                     return GridView.builder(
                       shrinkWrap: true,

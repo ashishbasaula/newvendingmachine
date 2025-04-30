@@ -52,8 +52,7 @@ class ProductCardComponent extends StatelessWidget {
                       ),
                 ),
                 Obx(
-                  () => cartController
-                          .isItemInCart(itemsModel.goodsNumber.toString())
+                  () => cartController.isItemInCart(itemsModel.id.toString())
                       ? Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -61,19 +60,18 @@ class ProductCardComponent extends StatelessWidget {
                                 onPressed: () {
                                   if (itemsModel.inventoryThreshold <=
                                       cartController.getItemQuantity(
-                                          itemsModel.goodsNumber.toString())) {
+                                          itemsModel.id.toString())) {
                                     MessageUtils.showWarning(
                                         "Inventory Threshold Reached");
                                     return;
                                   }
                                   cartController.incrementItemQuantity(
-                                      itemsModel.goodsNumber.toString());
+                                      itemsModel.id.toString());
                                 },
                                 icon: const Icon(Icons.add)),
                             Text(
                               cartController
-                                  .getItemQuantity(
-                                      itemsModel.goodsNumber.toString())
+                                  .getItemQuantity(itemsModel.id.toString())
                                   .toString(),
                               style: Theme.of(context)
                                   .textTheme
@@ -83,7 +81,7 @@ class ProductCardComponent extends StatelessWidget {
                             IconButton.filled(
                                 onPressed: () {
                                   cartController.decrementItemQuantity(
-                                      itemsModel.goodsNumber.toString());
+                                      itemsModel.id.toString());
                                 },
                                 icon: const Icon(Icons.remove)),
                           ],
@@ -96,13 +94,20 @@ class ProductCardComponent extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(8))),
                           onPressed: () {
                             // storeUsername();
-                            cartController.addItem(CartItem(
-                                id: itemsModel.goodsNumber.toString(),
-                                name: itemsModel.goodsName,
-                                price: itemsModel.sellingPrice,
-                                imageUrl: itemsModel.goodsImage,
-                                channelNumber:
-                                    itemsModel.channelNo.toString()));
+                            if (itemsModel.inventoryThreshold == 0) {
+                              MessageUtils.showWarning("No Items in inventory");
+                            } else {
+                              cartController.addItem(CartItem(
+                                  id: itemsModel.id,
+                                  name: itemsModel.goodsName,
+                                  price: itemsModel.sellingPrice,
+                                  imageUrl: itemsModel.goodsImage,
+                                  inventoryThreasHold:
+                                      itemsModel.inventoryThreshold,
+                                  itemCategory: itemsModel.goodsType,
+                                  channelNumber:
+                                      itemsModel.channelNo.toString()));
+                            }
                           },
                           icon: const Icon(Icons.shopping_cart)),
                 ),

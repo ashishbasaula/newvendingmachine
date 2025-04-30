@@ -15,10 +15,11 @@ import 'controller/items/items_controller.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  Get.put(SettingController());
+
   Get.put(AuthController());
   Get.put(CartController());
   Get.put(ItemsController());
-  Get.put(SettingController());
   Get.put(ShipmentController());
 
   final isLogin = await LocalStorageServices.getUserLoginStatus();

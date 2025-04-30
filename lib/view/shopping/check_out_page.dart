@@ -138,8 +138,12 @@ class CheckOutPage extends StatelessWidget {
                           size: DeviceUiHelper.isNotMobile() ? 250 : 100,
                         ),
                         onPressed: () {
-                          shipmentController.initialShipment();
-                          // motorController.configureSerialPort();
+                          // call this in production
+
+                          // shipmentController.initialShipment();
+
+// this is for the test
+                          shipmentController.addOrderToDatabase();
                         },
                       ),
                       const Text('QR Code')
@@ -155,36 +159,17 @@ class CheckOutPage extends StatelessWidget {
                           size: DeviceUiHelper.isNotMobile() ? 250 : 100,
                         ),
                         onPressed: () {
-                          SmartDialog.showLoading(msg: "Wait while processing");
-                          // motorController.configureSerialPort();
+                          // call this in production
+
+                          // shipmentController.initialShipment();
+
+// this is for the test
+                          shipmentController.addOrderToDatabase();
                         },
                       ),
                       const Text('Card Payment')
                     ],
                   ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // QR Code Icon
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.card_membership_sharp,
-                          size: DeviceUiHelper.isNotMobile() ? 250 : 100,
-                        ),
-                        onPressed: () {
-                          SmartDialog.showLoading(msg: "Wait while processing");
-                          // motorController.configureSerialPort();
-                        },
-                      ),
-                      const Text('On Screen Payment')
-                    ],
-                  ),
-                  // Card Payment Icon
                 ],
               ),
             ],

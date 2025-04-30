@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:newvendingmachine/controller/cart/cart_controller.dart';
 import 'package:newvendingmachine/module/cart_model.dart';
+import 'package:newvendingmachine/utils/message_utils.dart';
 
 class CheckoutProductCard extends StatelessWidget {
   final CartItem cartItem;
@@ -50,7 +51,7 @@ class CheckoutProductCard extends StatelessWidget {
                                 ),
                       ),
                       Text(
-                        "Drinks",
+                        cartItem.itemCategory,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               color: Colors.black45,
                               fontSize: fontSize * 0.7,
@@ -76,6 +77,15 @@ class CheckoutProductCard extends StatelessWidget {
                         IconButton(
                           iconSize: iconSize,
                           onPressed: () {
+                            final item = cartController.items
+                                .where((e) => e.id == cartItem.id)
+                                .first;
+                            if (item.inventoryThreasHold <=
+                                cartController.getItemQuantity(cartItem.id)) {
+                              MessageUtils.showWarning(
+                                  "Inventory Threshold Reached");
+                              return;
+                            }
                             cartController.incrementItemQuantity(cartItem.id);
                           },
                           icon: const Icon(Icons.add),

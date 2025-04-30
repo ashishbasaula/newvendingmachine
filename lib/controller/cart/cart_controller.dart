@@ -10,6 +10,7 @@ class CartController extends GetxController {
   // Add item to cart
   void addItem(CartItem item) {
     // Search for the item by ID, and increment quantity if found.
+
     var existingItem =
         _items.firstWhereOrNull((element) => element.id == item.id);
     if (existingItem != null) {
