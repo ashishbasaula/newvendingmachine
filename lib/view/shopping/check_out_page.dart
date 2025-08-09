@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:newvendingmachine/controller/Helper/device_ui_helper.dart';
+import 'package:newvendingmachine/controller/PaymentController/payment_controller.dart';
 import 'package:newvendingmachine/controller/Shipment/shipment_controller.dart';
 import 'package:newvendingmachine/controller/cart/cart_controller.dart';
 import 'package:newvendingmachine/utils/colors_utils.dart';
@@ -14,6 +14,7 @@ class CheckOutPage extends StatelessWidget {
 
   final cartController = Get.find<CartController>();
   final shipmentController = Get.find<ShipmentController>();
+  final paymentController = Get.find<PaymentConroller>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -87,12 +88,33 @@ class CheckOutPage extends StatelessWidget {
                                       : const Size(100, 50),
                                   backgroundColor:
                                       VendingMachineColors.primaryColor),
-                              onPressed: () {
+                              onPressed: () async {
                                 if (cartController.items.isEmpty) {
                                   MessageUtils.showWarning(
                                       "No Items to checkout");
                                 } else {
-                                  showPaymentOptionsDialog(context);
+                                  await paymentController
+                                      .handlePrepareForCheckout();
+                                  if (paymentController
+                                      .isPreparedForCheckout.value) {
+                                    await paymentController.handleCheckout(
+                                        paymentTitle:
+                                            "Your Payment ${DateTime.now()}",
+                                        totalPayment: cartController.totalPrice,
+                                        totalItems: cartController.items.length,
+                                        callBack: (value) {
+                                          if (value) {
+                                            shipmentController
+                                                .initialShipment();
+                                          } else {
+                                            MessageUtils.showError(
+                                                "Fail to checkout due to payment issue");
+                                          }
+                                        });
+                                  } else {
+                                    MessageUtils.showError(
+                                        "Checkout is not initalized");
+                                  }
                                 }
                               },
                               child: Text(

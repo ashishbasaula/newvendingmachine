@@ -30,8 +30,7 @@ class ShipmentController extends GetxController {
           channelQueue.add({"channelId": int.parse(element.channelNumber)});
         }
       }
-      dynamic data = await platform.invokeMethod("getShipmentStatus");
-      MessageUtils.showSuccess(data.toString());
+
       processQueue();
     } catch (e) {
       MessageUtils.showError("Error during initial shipment: ${e.toString()}");
@@ -40,51 +39,13 @@ class ShipmentController extends GetxController {
     }
   }
 
-//   void processQueue() async {
-//     try {
-//       if (channelQueue.isNotEmpty) {
-//         var currentItem = channelQueue.removeFirst();
-//         dispenseItems(channelNumber: currentItem['channelId']);
-//       } else {
-//         isAllItemDispatch.value =
-//             true; // Indicate all items have been processed
-
-//         SmartDialog.dismiss();
-
-// // clear the cart and upload the data to the backend
-//         addOrderToDatabase();
-//       }
-//     } catch (e) {
-//       MessageUtils.showError(e.toString());
-//     }
-//   }
-
   void processQueue() async {
     try {
       if (channelQueue.isNotEmpty) {
         final currentItem = channelQueue.first;
 
-        // Check device status before dispensing
-        final Map<dynamic, dynamic> status =
-            await platform.invokeMethod("getShipmentStatus");
-
-        final runStatus = status['runStatus'];
-        final faultCode = status['faultCode'];
-
-        if (runStatus == 0 && faultCode == 0) {
-          // Safe to dispense
-          channelQueue.removeFirst();
-          await dispenseItems(channelNumber: currentItem['channelId']);
-        } else {
-          // Not safe, show error or retry
-          MessageUtils.showError(
-              "Waiting for device to be ready. Status: $runStatus, Fault: $faultCode");
-
-          // Optionally, retry after delay
-          Future.delayed(const Duration(seconds: 2), () {
-            processQueue(); // Retry
-          });
-        }
+        channelQueue.removeFirst();
+        await dispenseItems(channelNumber: currentItem['channelId']);
       } else {
         isAllItemDispatch.value = true;
         SmartDialog.dismiss();
@@ -100,24 +61,8 @@ class ShipmentController extends GetxController {
       String message = await ShipmentService.initiateShipment(
           1, channelNumber, 1, false, false);
       debugPrint(message);
-      //check if current shipment is sucess and if sucess proced another
-      platform.setMethodCallHandler(_handleMethod);
     } on PlatformException catch (e) {
       MessageUtils.showError("Error dispensing items: ${e.toString()}");
-    }
-  }
-
-  Future<void> _handleMethod(MethodCall call) async {
-    switch (call.method) {
-      case "updateLastUniqueData":
-        processQueue();
-
-        break;
-      default:
-        throw PlatformException(
-            code: 'NotImplemented',
-            details:
-                'No implementation found for method ${call.method} on channel com.example.vend_final/serial');
     }
   }
 

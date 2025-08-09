@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:newvendingmachine/view/Payment/super_payment.dart';
 import 'SubPages/advance_option_page.dart';
 import 'SubPages/device_management.dart';
 import 'SubPages/display_setting_page.dart';
@@ -21,6 +22,12 @@ class _SettingPageState extends State<SettingPage> {
   TextEditingController searchController = TextEditingController();
 
   List<CategoryItems> categories = [
+    CategoryItems(
+        name: 'Payment Setting',
+        iconData: Icons.payment,
+        onTap: () {
+          Get.to(() => PaymentSettingsPage());
+        }),
     CategoryItems(
         name: 'System Info',
         iconData: Icons.info,

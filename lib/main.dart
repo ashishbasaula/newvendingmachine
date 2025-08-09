@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:newvendingmachine/Services/local_storage_services.dart';
+import 'package:newvendingmachine/controller/PaymentController/payment_controller.dart';
 import 'package:newvendingmachine/controller/Auth/auth_controller.dart';
 import 'package:newvendingmachine/controller/Device/setting_controller.dart';
 import 'package:newvendingmachine/controller/Shipment/shipment_controller.dart';
@@ -16,11 +17,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   Get.put(SettingController());
-
   Get.put(AuthController());
   Get.put(CartController());
   Get.put(ItemsController());
   Get.put(ShipmentController());
+  Get.put(PaymentConroller());
 
   final isLogin = await LocalStorageServices.getUserLoginStatus();
   runApp(MyApp(

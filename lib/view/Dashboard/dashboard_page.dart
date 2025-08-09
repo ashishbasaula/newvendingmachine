@@ -13,7 +13,7 @@ import 'package:newvendingmachine/utils/padding_utils.dart';
 import 'package:newvendingmachine/view/Auth/login_screen.dart';
 import 'package:newvendingmachine/view/Dashboard/components/banner_component.dart';
 import 'package:newvendingmachine/view/Dashboard/components/purchase_description.dart';
-import 'package:newvendingmachine/view/Payment/payment_list.dart';
+
 import 'package:newvendingmachine/view/Setting/setting_page.dart';
 
 import '../../utils/colors_utils.dart';
@@ -148,23 +148,6 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(
               height: 10,
             ),
-
-            ElevatedButton(
-                onPressed: () async {
-                  final value = await ScannerService().getScannerResult();
-                  debugPrint(value);
-                  setState(() {
-                    scanResult = value ?? "NO Result";
-                  });
-                  // Get.to(() => const PaymentList());
-                },
-                child: Text("Scan bar code ")),
-
-            ElevatedButton(
-                onPressed: () async {
-                  Get.to(() => const PaymentList());
-                },
-                child: Text("Payment List")),
 
             Obx(() {
               if (!helperController.isUserIdLoaded.value) {
