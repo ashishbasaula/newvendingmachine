@@ -210,27 +210,40 @@ class MainActivity: FlutterActivity() {
         return displayer.getBuildModel() // Assuming getBuildModel() returns the build model as String
     }
 
-  private fun initiateShipment(addr: Int, no: Int, type: Int, check: Boolean, lift: Boolean) {
-        if (!driver.EF_Opened()) {  // Check if the serial port is open
-            Toast.makeText(this, "Serial port is not open. Unable to initiate shipment.", Toast.LENGTH_LONG).show()
-            return  // Exit the method if the serial port is not open
+private fun initiateShipment(addr: Int, no: Int, type: Int, check: Boolean, lift: Boolean) {
+    if (!driver.EF_Opened()) {
+        throw Exception("Serial port not open")
+    }
+
+    val para = SReplyPara(addr, no % 100, type, check, lift)
+    driver.Shipment(para)
+
+    if (!para.isOK) {
+        throw Exception("Shipping failed: Device reported error")
+    }
+
+    // Wait until shipment is done
+    val startTime = System.currentTimeMillis()
+    while (true) {
+        val statusPara = SSReplyPara(addr)
+        driver.GetShipmentStatus(statusPara)
+
+        if (!statusPara.isOK) {
+            throw Exception("Failed to get shipment status")
         }
 
-        try {
-            SReplyPara(addr, no % 100, type, check, lift).apply {
-                driver.Shipment(this)
-                if (!this.isOK) {
-                    throw Exception("Shipping failed: Device reported an error")
-                }else{
-                     Toast.makeText(this@MainActivity, "Successful Shipment: Address=$addr, Number=${no % 100}, Type=$type, Check=$check, Lift=$lift", Toast.LENGTH_LONG).show()
-                }
-            }
-         
-            // add toast message
-        } catch (e: Exception) {
-            Toast.makeText(this@MainActivity, "Error initiating shipment: ${e.message}", Toast.LENGTH_LONG).show()
+        if (statusPara.runStatus == 0) { // Idle => done
+            break
         }
+
+        if (System.currentTimeMillis() - startTime > 15_000) { // 15 sec timeout
+            throw Exception("Shipment timeout")
+        }
+
+        Thread.sleep(200) // small delay before checking again
     }
+}
+
 
 
      private fun getShipmentStatus(addr: Int): Map<String, Any> {

@@ -39,8 +39,9 @@ class AuthController extends GetxController {
 
   String getDeviceProductId() {
 // in production replace with actual serial number
-    // final serialNumber = settingController.serialNumber.value; // use this in production
+    final serialNumber =
+        settingController.serialNumber.value; // use this in production
 
-    return "asdasdasdaddasdad";
+    return serialNumber;
   }
 }

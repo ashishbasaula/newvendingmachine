@@ -199,7 +199,7 @@ class PaymentConroller extends GetxController {
         currency: 'USD',
         foreignTransactionId: 'TXN_${DateTime.now().millisecondsSinceEpoch}',
         saleItemsCount: totalItems,
-        skipSuccessScreen: false,
+        skipSuccessScreen: true,
         tip: 0.0,
       );
 

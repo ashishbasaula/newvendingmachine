@@ -42,10 +42,13 @@ class ShipmentController extends GetxController {
   void processQueue() async {
     try {
       if (channelQueue.isNotEmpty) {
-        final currentItem = channelQueue.first;
+        final currentItem = channelQueue.removeFirst();
 
-        channelQueue.removeFirst();
+        // Await shipment before going to next
         await dispenseItems(channelNumber: currentItem['channelId']);
+
+        // Move to next item after previous is done
+        processQueue();
       } else {
         isAllItemDispatch.value = true;
         SmartDialog.dismiss();
@@ -58,6 +61,7 @@ class ShipmentController extends GetxController {
 
   Future<void> dispenseItems({required int channelNumber}) async {
     try {
+      // This will block until shipment is complete because of the Kotlin side
       String message = await ShipmentService.initiateShipment(
           1, channelNumber, 1, false, false);
       debugPrint(message);
