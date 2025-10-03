@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:newvendingmachine/Services/local_storage_services.dart';
 import 'package:newvendingmachine/Services/scanner_service.dart';
 import 'package:newvendingmachine/controller/Ads/ads_controller.dart';
+import 'package:newvendingmachine/controller/Device/setting_controller.dart';
 import 'package:newvendingmachine/controller/Helper/device_ui_helper.dart';
 import 'package:newvendingmachine/controller/Helper/helper_controller.dart';
 import 'package:newvendingmachine/controller/cart/cart_controller.dart';
@@ -17,6 +18,7 @@ import 'package:newvendingmachine/view/Dashboard/components/purchase_description
 import 'package:newvendingmachine/view/Setting/setting_page.dart';
 
 import '../../utils/colors_utils.dart';
+import '../barcodeScanning/barcode_scanner.dart';
 import '../shopping/check_out_page.dart';
 import 'components/product_card_component.dart';
 
@@ -29,7 +31,8 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends State<DashboardPage>
+    with WidgetsBindingObserver {
   List<String> chipItems = [
     "Cold Beverages",
     "Hot Beverages",
@@ -47,8 +50,38 @@ class _DashboardPageState extends State<DashboardPage> {
   final cartController = Get.find<CartController>();
   final itemsController = Get.find<ItemsController>();
   final helperController = Get.put(HelperController());
+  final settingsController = Get.put(SettingController());
+
   final ads = Get.put(AdsController());
   String scanResult = "";
+  int _tapCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      settingsController.hideStatusBar(false);
+      print("App is detached");
+    } else if (state == AppLifecycleState.paused) {
+      print("App is in background");
+      settingsController.hideStatusBar(false);
+    } else if (state == AppLifecycleState.resumed) {
+      print("App resumed");
+      settingsController.hideStatusBar(true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,7 +111,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
                       if (snapshot.hasData && !snapshot.data!.exists) {
                         return GestureDetector(
-                            onTap: () {
+                            onDoubleTap: () {
                               LocalStorageServices.storeUserLoginStatus(
                                   isLogin: false);
                               Get.offAll(() => const LoginScreen());
@@ -91,10 +124,20 @@ class _DashboardPageState extends State<DashboardPage> {
                             snapshot.data!.data() as Map<String, dynamic>;
                         return GestureDetector(
                           onTap: () {
-                            // machineInfoController.getMachineInformation();
-                            LocalStorageServices.storeUserLoginStatus(
-                                isLogin: false);
-                            Get.offAll(() => const LoginScreen());
+                            _tapCount++;
+                            print(_tapCount);
+                            if (_tapCount >= 7) {
+                              _tapCount = 0; // reset after success
+                              LocalStorageServices.storeUserLoginStatus(
+                                  isLogin: false);
+                              settingsController.hideStatusBar(false);
+                              Get.offAll(() => const LoginScreen());
+                            }
+
+                            // Optional: reset after some time if not continuous taps
+                            Future.delayed(const Duration(seconds: 2), () {
+                              _tapCount = 0;
+                            });
                           },
                           child: Text(
                             data['serialNumber'] ?? "",

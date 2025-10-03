@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 import 'package:newvendingmachine/controller/Auth/auth_controller.dart';
+import 'package:newvendingmachine/controller/Device/setting_controller.dart';
 import 'package:newvendingmachine/utils/colors_utils.dart';
 import 'package:newvendingmachine/utils/padding_utils.dart';
 
@@ -40,6 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
             InkWell(
               onTap: () {
                 authController.userAuth();
+                Get.find<SettingController>().hideStatusBar(true);
               },
               child: Container(
                 width: Get.width, // This will take full width of the screen

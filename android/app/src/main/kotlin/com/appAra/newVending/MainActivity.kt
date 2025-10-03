@@ -17,27 +17,30 @@ import android.widget.Toast
 import com.ys.rkapi.MyManager;
 import android.os.Handler
 import android.os.Looper
-import io.flutter.plugins.ScannerHelper
-import io.flutter.plugins.SmartCard
-import io.flutter.plugins.SmartCardInterface
 import android.util.Log
 
 
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "com.appAra.newVending/device"
+     private val SCAN_CHANNEL = "com.appAra.newVending/scanner"
     private var displayer = zcapi() // Initialize zcapi
      private var baudrate: Int = 9600
     // serial driver
     private lateinit var driver: UBoard
-    private lateinit var cardReaderManager: CardReaderManager
+    
     // serial address
     var commid = "/dev/ttyS0"
+
+    private var scannerHelper: MainActivityHelper? = null
     
     init {
         System.loadLibrary("serial_port")
         
     }
+
+
+    
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     displayer.getContext(applicationContext) // Set context for zcapi
@@ -52,16 +55,13 @@ class MainActivity: FlutterActivity() {
             Toast.makeText(this@MainActivity, "Failed to open serial port", Toast.LENGTH_SHORT).show()
         }
     }
-    //  cardReaderManager = CardReaderManager(applicationContext)
-    //  // init the card reader 
-    //  cardReaderManager.initUsbConnection()
 }
 
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
        
-        val smartCard = SmartCard(this)
+       
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             val manager = MyManager.getInstance(this)
@@ -87,7 +87,29 @@ class MainActivity: FlutterActivity() {
                 "shutdownDevice" -> {
                     manager.shutdown()
                     result.success("Device is shutting down")
-                }"upgradeFirmware" -> {
+                }
+              "hideStatusBar" -> {
+            val hide = call.argument<Boolean>("hide") // true = hide, false = show
+            if (hide != null) {
+                manager.hideStatusBar(hide)
+                 manager.hideNavBar (hide)
+
+                if (hide) {
+                    // When hidden → block ALL sliding
+                    manager.setSlideShowNotificationBar(false)
+                    manager.setSlideShowNavBar(false)
+                } else {
+                    // When shown → restore sliding
+                    manager.setSlideShowNotificationBar(true)
+                    manager.setSlideShowNavBar(true)
+                }
+
+                result.success("Status bar ${if (hide) "hidden and sliding disabled" else "shown and sliding enabled"}")
+            } else {
+                result.error("INVALID_ARGS", "Missing 'hide' argument", null)
+            }
+        }
+                "upgradeFirmware" -> {
                     val firmwarePath: String? = call.argument("firmwarePath")
                     if (firmwarePath != null) {
                         manager.upgradeSystem(firmwarePath)
@@ -157,48 +179,32 @@ class MainActivity: FlutterActivity() {
                         result.error("STATUS_ERROR", e.message, null)
                     }
                 }
-                "startScan"->{
-                    try {
-                        ScannerHelper.startScan(this, object : ScannerHelper.ResultCallback {
-                            override fun onResult(scanResult: String?, errorMessage: String?) {
-                                Handler(Looper.getMainLooper()).post {
-                                    if (errorMessage != null) {
-                                        result.error("SCAN_ERROR", errorMessage, null)
-                                    } else {
-                                        result.success(scanResult)
-                                    }
-                                }
-                            }
-                        })
-                        
-                    
-                    }
-                    catch(e: Exception) {
-                        result.error("SCAN_FAILED", e.message, null)
-                    }
-                    
-                }
+               
 // this are for the payment card reader 
-
-                "GetPaymentList"->{
-                    try {
-                        smartCard.listAvailableDevices(result)
-                    }
-                    catch(e: Exception) {
-                        result.error("SCAN_FAILED", e.message, null)
-                    }
-                }
+ 
             
                 else -> {
                     result.notImplemented()
                 }
             }
         }
+
+   val scannerChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SCAN_CHANNEL)
+        scannerHelper = MainActivityHelper(this, scannerChannel)
+        scannerChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "initializeScanner" -> { scannerHelper?.initializeScanner(); result.success("Scanner initialized") }
+                "startScan" -> { val node = call.argument<Int>("deviceNode"); if (node!=null) scannerHelper?.startScan(node); result.success(null) }
+                "stopScan" -> { val node = call.argument<Int>("deviceNode"); if (node!=null) scannerHelper?.stopScan(node); result.success(null) }
+                else -> result.notImplemented()
+            }
+        }
+
     }
 
      override fun onDestroy() {
         super.onDestroy()
-        // ScannerHelper.cleanup();
+         scannerHelper?.cleanup()
         if (this::driver.isInitialized) {
             this.driver.EF_CloseDev()
         }
@@ -210,40 +216,27 @@ class MainActivity: FlutterActivity() {
         return displayer.getBuildModel() // Assuming getBuildModel() returns the build model as String
     }
 
-private fun initiateShipment(addr: Int, no: Int, type: Int, check: Boolean, lift: Boolean) {
-    if (!driver.EF_Opened()) {
-        throw Exception("Serial port not open")
-    }
-
-    val para = SReplyPara(addr, no % 100, type, check, lift)
-    driver.Shipment(para)
-
-    if (!para.isOK) {
-        throw Exception("Shipping failed: Device reported error")
-    }
-
-    // Wait until shipment is done
-    val startTime = System.currentTimeMillis()
-    while (true) {
-        val statusPara = SSReplyPara(addr)
-        driver.GetShipmentStatus(statusPara)
-
-        if (!statusPara.isOK) {
-            throw Exception("Failed to get shipment status")
+  private fun initiateShipment(addr: Int, no: Int, type: Int, check: Boolean, lift: Boolean) {
+        if (!driver.EF_Opened()) {  // Check if the serial port is open
+            Toast.makeText(this, "Serial port is not open. Unable to initiate shipment.", Toast.LENGTH_LONG).show()
+            return  // Exit the method if the serial port is not open
         }
 
-        if (statusPara.runStatus == 0) { // Idle => done
-            break
+        try {
+            SReplyPara(addr, no % 100, type, check, lift).apply {
+                driver.Shipment(this)
+                if (!this.isOK) {
+                    throw Exception("Shipping failed: Device reported an error")
+                }else{
+                     Toast.makeText(this@MainActivity, "Successful Shipment: Address=$addr, Number=${no % 100}, Type=$type, Check=$check, Lift=$lift", Toast.LENGTH_LONG).show()
+                }
+            }
+         
+            // add toast message
+        } catch (e: Exception) {
+            Toast.makeText(this@MainActivity, "Error initiating shipment: ${e.message}", Toast.LENGTH_LONG).show()
         }
-
-        if (System.currentTimeMillis() - startTime > 15_000) { // 15 sec timeout
-            throw Exception("Shipment timeout")
-        }
-
-        Thread.sleep(200) // small delay before checking again
     }
-}
-
 
 
      private fun getShipmentStatus(addr: Int): Map<String, Any> {

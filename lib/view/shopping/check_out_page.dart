@@ -7,11 +7,17 @@ import 'package:newvendingmachine/controller/cart/cart_controller.dart';
 import 'package:newvendingmachine/utils/colors_utils.dart';
 import 'package:newvendingmachine/utils/message_utils.dart';
 import 'package:newvendingmachine/utils/padding_utils.dart';
+import 'package:newvendingmachine/view/shopping/components/age_verification_page.dart';
 import 'package:newvendingmachine/view/shopping/components/checkout_product_card.dart';
 
-class CheckOutPage extends StatelessWidget {
-  CheckOutPage({super.key});
+class CheckOutPage extends StatefulWidget {
+  const CheckOutPage({super.key});
 
+  @override
+  State<CheckOutPage> createState() => _CheckOutPageState();
+}
+
+class _CheckOutPageState extends State<CheckOutPage> {
   final cartController = Get.find<CartController>();
   final shipmentController = Get.find<ShipmentController>();
   final paymentController = Get.find<PaymentConroller>();
@@ -93,27 +99,90 @@ class CheckOutPage extends StatelessWidget {
                                   MessageUtils.showWarning(
                                       "No Items to checkout");
                                 } else {
-                                  await paymentController
-                                      .handlePrepareForCheckout();
-                                  if (paymentController
-                                      .isPreparedForCheckout.value) {
-                                    await paymentController.handleCheckout(
-                                        paymentTitle:
-                                            "Your Payment ${DateTime.now()}",
-                                        totalPayment: cartController.totalPrice,
-                                        totalItems: cartController.items.length,
-                                        callBack: (value) {
-                                          if (value) {
-                                            shipmentController
-                                                .initialShipment();
-                                          } else {
-                                            MessageUtils.showError(
-                                                "Fail to checkout due to payment issue");
-                                          }
-                                        });
+// check if the age verification is required else skip it
+
+                                  bool isAgeVerificationRequired = false;
+
+                                  for (var item in cartController.items) {
+                                    if (item.ageLimt > 0) {
+                                      isAgeVerificationRequired = true;
+                                      break;
+                                    }
+                                  }
+
+                                  if (!isAgeVerificationRequired) {
+                                    await paymentController
+                                        .handlePrepareForCheckout();
+                                    if (paymentController
+                                        .isPreparedForCheckout.value) {
+                                      await paymentController.handleCheckout(
+                                          paymentTitle:
+                                              "Your Payment ${DateTime.now()}",
+                                          totalPayment:
+                                              cartController.totalPrice,
+                                          totalItems:
+                                              cartController.items.length,
+                                          callBack: (value) {
+                                            if (value) {
+                                              shipmentController
+                                                  .initialShipment();
+                                            } else {
+                                              MessageUtils.showError(
+                                                  "Fail to checkout due to payment issue");
+                                            }
+                                          });
+                                    } else {
+                                      MessageUtils.showError(
+                                          "Checkout is not initalized");
+                                    }
                                   } else {
-                                    MessageUtils.showError(
-                                        "Checkout is not initalized");
+                                    // find the highest age requirement among items
+                                    int highestAgeLimit = 0;
+                                    for (var item in cartController.items) {
+                                      if (item.ageLimt > highestAgeLimit) {
+                                        highestAgeLimit = item.ageLimt;
+                                      }
+                                    }
+
+                                    Get.to(() => AgeVerificationPage(
+                                          age: highestAgeLimit,
+                                          callBack: (isVerified) async {
+                                            if (isVerified) {
+                                              // continue with payment process
+                                              await paymentController
+                                                  .handlePrepareForCheckout();
+                                              if (paymentController
+                                                  .isPreparedForCheckout
+                                                  .value) {
+                                                await paymentController
+                                                    .handleCheckout(
+                                                        paymentTitle:
+                                                            "Your Payment ${DateTime.now()}",
+                                                        totalPayment:
+                                                            cartController
+                                                                .totalPrice,
+                                                        totalItems:
+                                                            cartController
+                                                                .items.length,
+                                                        callBack: (value) {
+                                                          if (value) {
+                                                            shipmentController
+                                                                .initialShipment();
+                                                          } else {
+                                                            MessageUtils.showError(
+                                                                "Fail to checkout due to payment issue");
+                                                          }
+                                                        });
+                                              } else {
+                                                MessageUtils.showError(
+                                                    "Checkout is not initialized");
+                                              }
+                                            } else {
+                                              MessageUtils.showWarning(
+                                                  "Age verification failed. You must be at least $highestAgeLimit years old to buy these items.");
+                                            }
+                                          },
+                                        ));
                                   }
                                 }
                               },

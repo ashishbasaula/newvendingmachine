@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:newvendingmachine/Services/local_storage_services.dart';
-import 'package:newvendingmachine/controller/PaymentController/payment_controller.dart';
 import 'package:newvendingmachine/controller/Auth/auth_controller.dart';
 import 'package:newvendingmachine/controller/Device/setting_controller.dart';
+import 'package:newvendingmachine/controller/PaymentController/payment_controller.dart';
 import 'package:newvendingmachine/controller/Shipment/shipment_controller.dart';
 import 'package:newvendingmachine/view/Auth/login_screen.dart';
 import 'package:newvendingmachine/view/Dashboard/dashboard_page.dart';
@@ -47,6 +47,7 @@ class MyApp extends StatelessWidget {
       // here
       builder: FlutterSmartDialog.init(),
       home: isLogin ? const DashboardPage() : const LoginScreen(),
+      // home: DashboardPage(),
     );
   }
 }

@@ -7,6 +7,7 @@ class CartItem {
   final String imageUrl;
   final int inventoryThreasHold;
   final String itemCategory;
+  final int ageLimt;
 
   CartItem(
       {required this.id,
@@ -16,7 +17,8 @@ class CartItem {
       required this.inventoryThreasHold,
       this.quantity = 1,
       required this.imageUrl,
-      required this.itemCategory});
+      required this.itemCategory,
+      required this.ageLimt});
 
   Map<String, dynamic> toMap() {
     return {

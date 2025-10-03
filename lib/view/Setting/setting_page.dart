@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:newvendingmachine/view/Payment/super_payment.dart';
+import 'package:newvendingmachine/view/barcodeScanning/barcode_scanner.dart';
 import 'SubPages/advance_option_page.dart';
 import 'SubPages/device_management.dart';
 import 'SubPages/display_setting_page.dart';
@@ -27,6 +28,12 @@ class _SettingPageState extends State<SettingPage> {
         iconData: Icons.payment,
         onTap: () {
           Get.to(() => PaymentSettingsPage());
+        }),
+    CategoryItems(
+        name: 'Barcode Setting',
+        iconData: Icons.barcode_reader,
+        onTap: () {
+          Get.to(() => ScannerHomePage());
         }),
     CategoryItems(
         name: 'System Info',

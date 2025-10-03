@@ -13,24 +13,29 @@ class PaymentSettingsPage extends StatelessWidget {
     required String title,
     required bool isSuccess,
     String? subtitle,
+    required Function onPressed,
   }) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor:
-              isSuccess ? Colors.green.shade100 : Colors.red.shade100,
-          child: Icon(
-            icon,
+    return InkWell(
+      onTap: () => onPressed(),
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 2,
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor:
+                isSuccess ? Colors.green.shade100 : Colors.red.shade100,
+            child: Icon(
+              icon,
+              color: isSuccess ? Colors.green : Colors.red,
+            ),
+          ),
+          title:
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: subtitle != null ? Text(subtitle) : null,
+          trailing: Icon(
+            isSuccess ? Icons.check_circle : Icons.cancel,
             color: isSuccess ? Colors.green : Colors.red,
           ),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: subtitle != null ? Text(subtitle) : null,
-        trailing: Icon(
-          isSuccess ? Icons.check_circle : Icons.cancel,
-          color: isSuccess ? Colors.green : Colors.red,
         ),
       ),
     );
@@ -75,6 +80,7 @@ class PaymentSettingsPage extends StatelessWidget {
                 subtitle: paymentController.isSdkInitialized.value
                     ? "SDK is ready to use"
                     : "Please initialize the SDK",
+                onPressed: paymentController.initializeSumUpSDK,
               ),
               const SizedBox(height: 10),
 
@@ -86,6 +92,7 @@ class PaymentSettingsPage extends StatelessWidget {
                 subtitle: paymentController.isLoginSuccess.value
                     ? "Merchant: ${paymentController.merchantResponse.value?.merchantCode ?? "Unknown"}"
                     : "Please login to proceed",
+                onPressed: paymentController.handleLogin,
               ),
               const SizedBox(height: 10),
 
@@ -97,6 +104,7 @@ class PaymentSettingsPage extends StatelessWidget {
                 subtitle: paymentController.isSettingSuccess.value
                     ? "Reader is configured"
                     : "Setup required",
+                onPressed: paymentController.handleOpenSettings,
               ),
               const SizedBox(height: 20),
 

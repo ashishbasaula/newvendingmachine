@@ -12,109 +12,126 @@ class ProductCardComponent extends StatelessWidget {
   final cartController = Get.find<CartController>();
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(
-          side: const BorderSide(color: Colors.black12, width: 1.5),
-          borderRadius: BorderRadius.circular(8)),
-      child: Column(
-        children: [
-          Container(
-            height: MediaQuery.of(context).size.height * 0.14,
-            width: MediaQuery.of(context).size.width,
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                image: DecorationImage(
-                    image: NetworkImage(itemsModel.goodsImage),
-                    fit: BoxFit.fill)),
-          ),
-          const SizedBox(
-            height: 10,
-          ),
-          Center(
-            child: Text(
-              itemsModel.goodsName,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyLarge!
-                  .copyWith(fontWeight: FontWeight.normal, color: Colors.green),
+    return InkWell(
+      onTap: () {
+        if (itemsModel.inventoryThreshold == 0) {
+          MessageUtils.showWarning("No Items in inventory");
+        } else {
+          cartController.addItem(CartItem(
+              id: itemsModel.id,
+              name: itemsModel.goodsName,
+              price: itemsModel.sellingPrice,
+              imageUrl: itemsModel.goodsImage,
+              inventoryThreasHold: itemsModel.inventoryThreshold,
+              itemCategory: itemsModel.goodsType,
+              channelNumber: itemsModel.channelNo.toString(),
+              ageLimt: itemsModel.ageLimit));
+        }
+      },
+      child: Card(
+        shape: RoundedRectangleBorder(
+            side: const BorderSide(color: Colors.black12, width: 1.5),
+            borderRadius: BorderRadius.circular(8)),
+        child: Column(
+          children: [
+            Container(
+              height: MediaQuery.of(context).size.height * 0.14,
+              width: MediaQuery.of(context).size.width,
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  image: DecorationImage(
+                      image: NetworkImage(itemsModel.goodsImage),
+                      fit: BoxFit.fill)),
             ),
-          ),
-          // const Spacer(),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "\$${itemsModel.sellingPrice}",
-                  style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                Obx(
-                  () => cartController.isItemInCart(itemsModel.id.toString())
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            IconButton.filled(
-                                onPressed: () {
-                                  if (itemsModel.inventoryThreshold <=
-                                      cartController.getItemQuantity(
-                                          itemsModel.id.toString())) {
-                                    MessageUtils.showWarning(
-                                        "Inventory Threshold Reached");
-                                    return;
-                                  }
-                                  cartController.incrementItemQuantity(
-                                      itemsModel.id.toString());
-                                },
-                                icon: const Icon(Icons.add)),
-                            Text(
-                              cartController
-                                  .getItemQuantity(itemsModel.id.toString())
-                                  .toString(),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall!
-                                  .copyWith(fontSize: 20),
-                            ),
-                            IconButton.filled(
-                                onPressed: () {
-                                  cartController.decrementItemQuantity(
-                                      itemsModel.id.toString());
-                                },
-                                icon: const Icon(Icons.remove)),
-                          ],
-                        )
-                      : IconButton.filled(
-                          style: IconButton.styleFrom(
-                              backgroundColor:
-                                  VendingMachineColors.primaryColor,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8))),
-                          onPressed: () {
-                            // storeUsername();
-                            if (itemsModel.inventoryThreshold == 0) {
-                              MessageUtils.showWarning("No Items in inventory");
-                            } else {
-                              cartController.addItem(CartItem(
-                                  id: itemsModel.id,
-                                  name: itemsModel.goodsName,
-                                  price: itemsModel.sellingPrice,
-                                  imageUrl: itemsModel.goodsImage,
-                                  inventoryThreasHold:
-                                      itemsModel.inventoryThreshold,
-                                  itemCategory: itemsModel.goodsType,
-                                  channelNumber:
-                                      itemsModel.channelNo.toString()));
-                            }
-                          },
-                          icon: const Icon(Icons.shopping_cart)),
-                ),
-              ],
+            const SizedBox(
+              height: 10,
             ),
-          )
-        ],
+            Center(
+              child: Text(
+                itemsModel.goodsName,
+                style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                    fontWeight: FontWeight.normal, color: Colors.green),
+              ),
+            ),
+            // const Spacer(),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "\$${itemsModel.sellingPrice}",
+                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  Obx(
+                    () => cartController.isItemInCart(itemsModel.id.toString())
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              IconButton.filled(
+                                  onPressed: () {
+                                    if (itemsModel.inventoryThreshold <=
+                                        cartController.getItemQuantity(
+                                            itemsModel.id.toString())) {
+                                      MessageUtils.showWarning(
+                                          "Inventory Threshold Reached");
+                                      return;
+                                    }
+                                    cartController.incrementItemQuantity(
+                                        itemsModel.id.toString());
+                                  },
+                                  icon: const Icon(Icons.add)),
+                              Text(
+                                cartController
+                                    .getItemQuantity(itemsModel.id.toString())
+                                    .toString(),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall!
+                                    .copyWith(fontSize: 20),
+                              ),
+                              IconButton.filled(
+                                  onPressed: () {
+                                    cartController.decrementItemQuantity(
+                                        itemsModel.id.toString());
+                                  },
+                                  icon: const Icon(Icons.remove)),
+                            ],
+                          )
+                        : IconButton.filled(
+                            style: IconButton.styleFrom(
+                                backgroundColor:
+                                    VendingMachineColors.primaryColor,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8))),
+                            onPressed: () {
+                              // storeUsername();
+                              if (itemsModel.inventoryThreshold == 0) {
+                                MessageUtils.showWarning(
+                                    "No Items in inventory");
+                              } else {
+                                cartController.addItem(CartItem(
+                                    id: itemsModel.id,
+                                    name: itemsModel.goodsName,
+                                    price: itemsModel.sellingPrice,
+                                    imageUrl: itemsModel.goodsImage,
+                                    inventoryThreasHold:
+                                        itemsModel.inventoryThreshold,
+                                    itemCategory: itemsModel.goodsType,
+                                    channelNumber:
+                                        itemsModel.channelNo.toString(),
+                                    ageLimt: itemsModel.ageLimit));
+                              }
+                            },
+                            icon: const Icon(Icons.shopping_cart)),
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }

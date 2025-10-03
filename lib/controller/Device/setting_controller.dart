@@ -24,6 +24,7 @@ class SettingController extends GetxController {
   void onInit() {
     super.onInit();
     getSystemInformation();
+    hideStatusBar(true);
   }
 
   Future<void> getSystemInformation() async {
@@ -41,6 +42,7 @@ class SettingController extends GetxController {
           (await methodChannel.invokeMethod('getCPUTemp')).toString();
       serialNumber.value =
           (await methodChannel.invokeMethod('getSerialNumber')).toString();
+      (await methodChannel.invokeMethod('hideStatusBar')).toString();
       isSystemInfoLoaded.value = true;
     } catch (e) {
       debugPrint(e.toString());
@@ -137,5 +139,15 @@ class SettingController extends GetxController {
       snackStyle: SnackStyle.FLOATING,
       duration: const Duration(seconds: 3),
     );
+  }
+
+  Future<void> hideStatusBar(bool isHide) async {
+    try {
+      final result =
+          await methodChannel.invokeMethod("hideStatusBar", {"hide": isHide});
+      print("Native response: $result");
+    } on PlatformException catch (e) {
+      print("Error: ${e.message}");
+    }
   }
 }
