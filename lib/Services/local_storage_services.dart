@@ -2,6 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalStorageServices {
   static String idKey = "uID";
+  static String deviceId = "deviceid";
   static String loginKey = "isLogin";
 
   static Future<void> storeUserId({required String userId}) async {
@@ -9,10 +10,20 @@ class LocalStorageServices {
     sharedPreferences.setString(idKey, userId);
   }
 
+  static Future<void> storeDeviceId({required String myId}) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    sharedPreferences.setString(deviceId, myId);
+  }
+
   // this is for getting the user id
   static Future<String> getUserId() async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
     return sharedPreferences.getString(idKey) ?? "";
+  }
+
+  static Future<String> getDeviceId() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    return sharedPreferences.getString(deviceId) ?? "";
   }
 
   static Future<void> storeUserLoginStatus({required bool isLogin}) async {

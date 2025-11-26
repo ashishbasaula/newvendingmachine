@@ -41,7 +41,6 @@ class _LoginScreenState extends State<LoginScreen> {
             InkWell(
               onTap: () {
                 authController.userAuth();
-                Get.find<SettingController>().hideStatusBar(true);
               },
               child: Container(
                 width: Get.width, // This will take full width of the screen

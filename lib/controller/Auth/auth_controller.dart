@@ -15,16 +15,19 @@ class AuthController extends GetxController {
     try {
       FirebaseFirestore fireStore = FirebaseFirestore.instance;
       QuerySnapshot querySnapshot = await fireStore
-          .collection("users")
+          .collectionGroup("devices")
           .where('serialNumber', isEqualTo: deviceId)
           .get();
 
       if (querySnapshot.docs.isNotEmpty) {
         for (var doc in querySnapshot.docs) {
-          LocalStorageServices.storeUserId(userId: doc.id);
+          LocalStorageServices.storeUserId(
+              userId: doc.reference.parent.parent!.id);
+          LocalStorageServices.storeDeviceId(myId: doc.id);
           LocalStorageServices.storeUserLoginStatus(isLogin: true);
           Get.offAll(() => const DashboardPage());
           MessageUtils.showSuccess("User authenticated successfully");
+          Get.find<SettingController>().hideStatusBar(true);
         }
       } else {
         // Handle the case where no documents are found
@@ -32,6 +35,7 @@ class AuthController extends GetxController {
       }
     } catch (e) {
       MessageUtils.showError("Failed to authenticate: ${e.toString()}");
+      print(e.toString());
     } finally {
       SmartDialog.dismiss();
     }

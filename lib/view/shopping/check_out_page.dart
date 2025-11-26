@@ -127,8 +127,8 @@ class _CheckOutPageState extends State<CheckOutPage> {
                                               shipmentController
                                                   .initialShipment();
                                             } else {
-                                              MessageUtils.showError(
-                                                  "Fail to checkout due to payment issue");
+                                              // MessageUtils.showError(
+                                              //     "Fail to checkout due to payment issue");
                                             }
                                           });
                                     } else {
@@ -169,8 +169,8 @@ class _CheckOutPageState extends State<CheckOutPage> {
                                                             shipmentController
                                                                 .initialShipment();
                                                           } else {
-                                                            MessageUtils.showError(
-                                                                "Fail to checkout due to payment issue");
+                                                            // MessageUtils.showError(
+                                                            //     "Fail to checkout due to payment issue");
                                                           }
                                                         });
                                               } else {

@@ -1,6 +1,8 @@
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -12,6 +14,7 @@ import 'package:newvendingmachine/utils/message_utils.dart';
 
 import '../../view/shopping/sucess_payment_page.dart';
 import '../cart/cart_controller.dart' show CartController;
+import 'package:http/http.dart' as http;
 
 class ShipmentController extends GetxController {
   static const platform = MethodChannel('com.appAra.newVending/device');
@@ -19,6 +22,8 @@ class ShipmentController extends GetxController {
 
   final cartController = Get.find<CartController>();
   final settingController = Get.find<SettingController>();
+  var userName = "".obs;
+  var userEmail = "".obs;
 
   Queue<Map<String, dynamic>> channelQueue = Queue<Map<String, dynamic>>();
   var isAllItemDispatch = false.obs;
@@ -75,13 +80,15 @@ class ShipmentController extends GetxController {
 
     final userId = await LocalStorageServices.getUserId();
     // use this in the production
-    // final deviceNumber = settingController.serialNumber.value;
-    const deviceNumber = "asdasdasdaddasdad";
+    final deviceNumber = settingController.serialNumber.value;
+    // const deviceNumber = "asdasdasdaddasdad";
 
     try {
       final docRef = firebaseFireStore
           .collection("users")
           .doc(userId)
+          .collection("devices")
+          .doc(await LocalStorageServices.getDeviceId())
           .collection("Orders")
           .doc();
       final orderId = docRef.id;
@@ -109,9 +116,19 @@ class ShipmentController extends GetxController {
 
     try {
       for (var items in cartController.items) {
+        if (items.inventoryThreasHold - items.quantity <= 0) {
+          String to = userEmail.value;
+          String subject = "Stock Alert: Item ${items.name} is Out of Stock";
+          String message =
+              "Dear ${userName.value}, your item ${items.name} is out of stock in device  ${settingController.serialNumber.value}. Please refill it as soon as possible. Thank you.";
+          await sendEmail(to: to, subject: subject, message: message);
+        }
+
         await firebaseFireStore
             .collection("users")
             .doc(userId)
+            .collection("devices")
+            .doc(await LocalStorageServices.getDeviceId())
             .collection("Items")
             .doc(items.id)
             .update({
@@ -125,6 +142,78 @@ class ShipmentController extends GetxController {
       MessageUtils.showError(e.toString());
     } finally {
       SmartDialog.dismiss();
+    }
+  }
+
+  void testSendEmail() async {
+    String to = userEmail.value;
+    String subject = "Stock Alert: Item  Apple is Out of Stock";
+    String message =
+        "Dear ${userName.value}, your item apple is out of stock in device  ${settingController.serialNumber.value}. Please refill it as soon as possible. Thank you.";
+    // await sendEmail(to: to, subject: subject, message: message);
+    debugPrint(message);
+  }
+
+  Future<void> sendEmail({
+    required String to,
+    required String subject,
+    required String message,
+  }) async {
+    try {
+      // Optional: set status text here, if you use state or a UI element
+      debugPrint("📨 Sending...");
+
+      final response = await http.post(
+        Uri.parse("http://88.99.192.190/api/sendmail"), // your API endpoint
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "to": to,
+          "subject": subject,
+          "text": message,
+          "html": "<p>$message</p>",
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        debugPrint("✅ Email sent successfully: $data");
+      } else {
+        final data = jsonDecode(response.body);
+        debugPrint("❌ Error: ${data['error'] ?? 'Unknown error'}");
+      }
+    } catch (e) {
+      debugPrint("❌ Failed to send email: $e");
+    }
+  }
+
+  Future<void> getAdminDetails() async {
+    try {
+      // Replace with your actual user ID
+      String userId = await LocalStorageServices.getUserId();
+      ;
+
+      // Fetch document from Firestore
+      final DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+
+        userName.value = data['userName'] ?? 'Unknown';
+        userEmail.value = data['userEmail'] ?? 'Unknown';
+        // final password = data['password'] ?? 'Unknown';
+        // final phoneNumber = data['phoneNumber'] ?? 'Unknown';
+
+        // Optionally, you can store these in your app state or model
+      } else {
+        debugPrint("❌ No admin found for userId: $userId");
+      }
+    } catch (e) {
+      MessageUtils.showError(e.toString());
     }
   }
 }

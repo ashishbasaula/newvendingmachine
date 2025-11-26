@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   cloud_firestore
   firebase_core
+  in_app_idle_detector
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

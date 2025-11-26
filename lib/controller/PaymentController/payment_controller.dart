@@ -97,7 +97,6 @@ class PaymentConroller extends GetxController {
       if (data.message?['loginResult'] == true) {
         isLoginSuccess.value = true;
         statusMessage.value = 'Login successful!';
-        MessageUtils.showSuccess(statusMessage.value);
 
         await getMerchantInfo();
       } else {
@@ -154,7 +153,6 @@ class PaymentConroller extends GetxController {
 
     isLoading.value = true;
     statusMessage.value = 'Preparing terminal for checkout...';
-    MessageUtils.showSuccess(statusMessage.value);
 
     try {
       final data = await Sumup.prepareForCheckout();
@@ -163,14 +161,11 @@ class PaymentConroller extends GetxController {
       if (data.status) {
         isPreparedForCheckout.value = true;
         statusMessage.value = 'Terminal ready for payment!';
-        MessageUtils.showSuccess(statusMessage.value);
       } else {
         statusMessage.value = 'Failed to prepare terminal';
-        MessageUtils.showWarning(statusMessage.value);
       }
     } catch (e) {
       statusMessage.value = 'Prepare checkout error: $e';
-      MessageUtils.showError(statusMessage.value);
 
       debugPrint('Prepare checkout error: $e');
     } finally {
@@ -189,7 +184,6 @@ class PaymentConroller extends GetxController {
 
     isLoading.value = true;
     statusMessage.value = 'Processing payment...';
-    MessageUtils.showSuccess(statusMessage.value);
 
     try {
       // Create payment object according to documentation
@@ -216,7 +210,6 @@ class PaymentConroller extends GetxController {
 
         statusMessage.value =
             'Payment successful!\nTransaction: $transactionCode\nCard: $cardType\nAmount:\$$amount';
-        MessageUtils.showSuccess(statusMessage.value);
 
         addTransactionDetails(transactionCode!, cardType, amount);
         // _showSuccessDialog(
@@ -228,14 +221,12 @@ class PaymentConroller extends GetxController {
         const errorMessage = 'Payment failed';
 
         statusMessage.value = 'Payment failed: $errorMessage';
-        MessageUtils.showError(statusMessage.value);
 
         callBack(false);
         // _showError('Payment failed: $errorMessage');
       }
     } catch (e) {
       statusMessage.value = 'Checkout error: $e';
-      MessageUtils.showError(statusMessage.value);
 
       callBack(false);
       debugPrint('Checkout error: $e');
@@ -250,7 +241,6 @@ class PaymentConroller extends GetxController {
 
     isLoading.value = true;
     statusMessage.value = 'Logging out...';
-    MessageUtils.showSuccess(statusMessage.value);
 
     try {
       final data = await Sumup.logout();

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:newvendingmachine/controller/Helper/helper_controller.dart';
+import 'package:newvendingmachine/utils/message_utils.dart';
 import 'package:newvendingmachine/view/Payment/super_payment.dart';
 import 'package:newvendingmachine/view/barcodeScanning/barcode_scanner.dart';
 import 'SubPages/advance_option_page.dart';
@@ -21,7 +23,7 @@ class SettingPage extends StatefulWidget {
 
 class _SettingPageState extends State<SettingPage> {
   TextEditingController searchController = TextEditingController();
-
+  var helperController = Get.find<HelperController>();
   List<CategoryItems> categories = [
     CategoryItems(
         name: 'Payment Setting',
@@ -152,7 +154,13 @@ class _SettingPageState extends State<SettingPage> {
                   );
                 },
               ),
-            )
+            ),
+            ElevatedButton(
+                onPressed: () {
+                  helperController.canShowLogoutButton.value = true;
+                  MessageUtils.showSuccess("SucessFully Enabled Pin");
+                },
+                child: const Text("Show Pin Btton"))
           ],
         ),
       ),

@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:lottie/lottie.dart';
 import 'package:newvendingmachine/controller/cart/cart_controller.dart';
 import 'package:newvendingmachine/utils/message_utils.dart';
-import 'package:newvendingmachine/utils/padding_utils.dart';
 import 'package:newvendingmachine/view/Dashboard/dashboard_page.dart';
 
 class AgeVerificationPage extends StatefulWidget {
   final int age;
   final Function(bool) callBack;
-  const AgeVerificationPage(
-      {super.key, required this.age, required this.callBack});
+
+  const AgeVerificationPage({
+    super.key,
+    required this.age,
+    required this.callBack,
+  });
 
   @override
   State<AgeVerificationPage> createState() => _AgeVerificationPageState();
@@ -20,12 +21,11 @@ class AgeVerificationPage extends StatefulWidget {
 
 class _AgeVerificationPageState extends State<AgeVerificationPage> {
   static const platform = MethodChannel('com.appAra.newVending/scanner');
-  String _scanMessage = 'No code scanning information is available';
   final cartController = Get.find<CartController>();
+  String _scanMessage = 'No code scanning information is available';
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _setupMethodCallHandler();
   }
@@ -47,43 +47,103 @@ class _AgeVerificationPageState extends State<AgeVerificationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Age Verification"),
-      ),
-      body: Padding(
-        padding: PaddingUtils.SCREEN_PADDING,
+      backgroundColor: Colors.white,
+      body: Align(
+        alignment: Alignment.center,
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Lottie.asset(
-              "assets/animation/id_verify.json",
+            // Step 1
+            _buildStep(
+              step: "Step 1",
+              title: "SCAN YOUR ID",
+              icon: Icons.badge_outlined,
             ),
-            const Text(
-              "1.Please Scan you id card to verify your age\n2.Pay For your items\n3.Collect you items",
-              textAlign: TextAlign.justify,
-              style: TextStyle(
-                  color: Colors.deepOrangeAccent,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20),
+            const SizedBox(height: 50),
+
+            // Step 2
+            _buildStep(
+              step: "Step 2",
+              title: "MAKE PAYMENT",
+              icon: Icons.payment_rounded,
             ),
-            const SizedBox(
-              height: 50,
+            const SizedBox(height: 50),
+
+            // Step 3
+            _buildStep(
+              step: "Step 3",
+              title: "COLLECT\nYOUR PURCHASED ITEM",
+              icon: Icons.shopping_bag_outlined,
+              multiLine: true,
             ),
+
+            const SizedBox(height: 60),
+
+            // Cancel Button
             ElevatedButton.icon(
               onPressed: () {
                 cartController.cleareCartItems();
                 Get.offAll(() => const DashboardPage());
               },
+              icon: const Icon(Icons.cancel, color: Colors.white),
               label: const Text(
                 "Cancel",
                 style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepOrangeAccent),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-              icon: const Icon(Icons.cancel),
-            )
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStep({
+    required String step,
+    required String title,
+    required IconData icon,
+    bool multiLine = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          step,
+          style: const TextStyle(
+            color: Colors.black54,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          title,
+          textAlign: multiLine ? TextAlign.center : TextAlign.left,
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Icon(
+          icon,
+          size: 60,
+          color: Colors.black87,
+        ),
+      ],
     );
   }
 
@@ -107,10 +167,7 @@ class _AgeVerificationPageState extends State<AgeVerificationPage> {
       _scanMessage = '[$count][device number:$deviceId] Buf: $data\n'
           'DOB: $dobString\n'
           'Age Verified: ${isAbove18 ? "✅ Allowed" : "❌ Denied"}';
-      MessageUtils.showWarning(_scanMessage);
     });
-
-    // Call back to parent
 
     widget.callBack(isAbove18);
     if (isAbove18) {
@@ -119,11 +176,10 @@ class _AgeVerificationPageState extends State<AgeVerificationPage> {
   }
 
   String _extractDob(String rawData) {
-    // Find DBB field in the raw barcode data
     final regex = RegExp(r'DBB(\d{8})');
     final match = regex.firstMatch(rawData);
     if (match != null) {
-      return match.group(1)!; // returns like "02221997"
+      return match.group(1)!;
     }
     return "";
   }

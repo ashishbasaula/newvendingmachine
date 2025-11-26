@@ -24,7 +24,6 @@ class SettingController extends GetxController {
   void onInit() {
     super.onInit();
     getSystemInformation();
-    hideStatusBar(true);
   }
 
   Future<void> getSystemInformation() async {

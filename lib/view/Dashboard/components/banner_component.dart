@@ -14,8 +14,10 @@ class BannerComponent extends StatelessWidget {
       () => !adsController.isAdsLoaded.value
           ? const SizedBox.shrink()
           : CarouselSlider(
-              options:
-                  CarouselOptions(autoPlay: true, height: Get.height * 0.2),
+              options: CarouselOptions(
+                  autoPlay: true,
+                  height: Get.height * 0.4,
+                  viewportFraction: 1),
               items: adsController.adsList.map((i) {
                 return Builder(
                   builder: (BuildContext context) {

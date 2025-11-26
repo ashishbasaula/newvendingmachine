@@ -18,6 +18,7 @@ import com.ys.rkapi.MyManager;
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.content.Context
 
 
 
@@ -60,9 +61,6 @@ class MainActivity: FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-       
-       
-
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             val manager = MyManager.getInstance(this)
             when (call.method) {
@@ -77,6 +75,16 @@ class MainActivity: FlutterActivity() {
                     manager.reboot()
                     result.success("Device is rebooting")
                 }
+                "wasAfterReboot"->{
+                     val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                    val restarted = prefs.getBoolean("restarted", false)
+
+                    if (restarted) {
+                        prefs.edit().putBoolean("restarted", false).apply()
+                    }
+
+                    result.success(restarted)
+                }
                 "setGpioDirection" -> {
                     val gpio: Int? = call.argument("gpio")
                     val direction: Int? = call.argument("direction")
@@ -89,26 +97,28 @@ class MainActivity: FlutterActivity() {
                     result.success("Device is shutting down")
                 }
               "hideStatusBar" -> {
-            val hide = call.argument<Boolean>("hide") // true = hide, false = show
-            if (hide != null) {
-                manager.hideStatusBar(hide)
-                 manager.hideNavBar (hide)
+    val hide = call.argument<Boolean>("hide") // true = hide, false = show
+    if (hide != null) {
+        // Hide or show status + nav bar
+        manager.hideStatusBar(!hide)
+        manager.hideNavBar(hide)
 
-                if (hide) {
-                    // When hidden → block ALL sliding
-                    manager.setSlideShowNotificationBar(false)
-                    manager.setSlideShowNavBar(false)
-                } else {
-                    // When shown → restore sliding
-                    manager.setSlideShowNotificationBar(true)
-                    manager.setSlideShowNavBar(true)
-                }
-
-                result.success("Status bar ${if (hide) "hidden and sliding disabled" else "shown and sliding enabled"}")
-            } else {
-                result.error("INVALID_ARGS", "Missing 'hide' argument", null)
-            }
+        if (hide) {
+            // When hidden → block sliding
+            manager.setSlideShowNotificationBar(false)
+            manager.setSlideShowNavBar(false)
+        } else {
+            // When shown → allow sliding
+            manager.setSlideShowNotificationBar(true)
+            manager.setSlideShowNavBar(true)
         }
+
+        result.success("Status bar ${if (hide) "hidden and sliding disabled" else "shown and sliding enabled"}")
+    } else {
+        result.error("INVALID_ARGS", "Missing 'hide' argument", null)
+    }
+}
+
                 "upgradeFirmware" -> {
                     val firmwarePath: String? = call.argument("firmwarePath")
                     if (firmwarePath != null) {
