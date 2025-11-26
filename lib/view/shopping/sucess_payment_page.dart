@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 import 'package:newvendingmachine/utils/colors_utils.dart';
 import 'package:newvendingmachine/utils/padding_utils.dart';
+import 'package:newvendingmachine/view/Dashboard/dashboard_page.dart';
 
 class SucessPaymentPage extends StatelessWidget {
   const SucessPaymentPage({super.key});
@@ -38,7 +39,7 @@ class SucessPaymentPage extends StatelessWidget {
                     backgroundColor: VendingMachineColors.primaryColor,
                     minimumSize: Size(Get.width / 2.5, 50)),
                 onPressed: () {
-                  // Get.offAll(() => const DashboardScreen());
+                  Get.offAll(() => const DashboardPage());
                 },
                 child: Text(
                   "Return Home ",

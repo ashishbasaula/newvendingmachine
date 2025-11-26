@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  in_app_idle_detector
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

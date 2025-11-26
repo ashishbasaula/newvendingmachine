@@ -20,7 +20,7 @@ class PurchaseDescription extends StatelessWidget {
           Row(
             children: [
               Text(
-                "How to purchase",
+                "VVS vending ",
                 style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                       color: Colors.white,
                       fontSize: screenWidth * 0.05, // Responsive font size

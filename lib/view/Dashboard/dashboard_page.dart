@@ -1,17 +1,26 @@
+import 'dart:async';
+
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:in_app_idle_detector/in_app_idle_detector.dart';
+import 'package:newvendingmachine/Services/local_storage_services.dart';
 import 'package:newvendingmachine/controller/Ads/ads_controller.dart';
+import 'package:newvendingmachine/controller/Device/setting_controller.dart';
 import 'package:newvendingmachine/controller/Helper/device_ui_helper.dart';
 import 'package:newvendingmachine/controller/Helper/helper_controller.dart';
+import 'package:newvendingmachine/controller/Shipment/shipment_controller.dart';
 import 'package:newvendingmachine/controller/cart/cart_controller.dart';
 import 'package:newvendingmachine/controller/items/items_controller.dart';
 import 'package:newvendingmachine/module/user_items_model.dart';
+import 'package:newvendingmachine/utils/message_utils.dart';
 import 'package:newvendingmachine/utils/padding_utils.dart';
+import 'package:newvendingmachine/view/Auth/login_screen.dart';
 import 'package:newvendingmachine/view/Dashboard/components/banner_component.dart';
-import 'package:newvendingmachine/view/Dashboard/components/purchase_description.dart';
 import 'package:newvendingmachine/view/Setting/setting_page.dart';
+import 'package:pinput/pinput.dart';
 
 import '../../utils/colors_utils.dart';
 import '../shopping/check_out_page.dart';
@@ -26,7 +35,8 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends State<DashboardPage>
+    with WidgetsBindingObserver {
   List<String> chipItems = [
     "Cold Beverages",
     "Hot Beverages",
@@ -44,12 +54,156 @@ class _DashboardPageState extends State<DashboardPage> {
   final cartController = Get.find<CartController>();
   final itemsController = Get.find<ItemsController>();
   final helperController = Get.put(HelperController());
+  final settingsController = Get.put(SettingController());
+  final shipMentController = Get.find<ShipmentController>();
+
   final ads = Get.put(AdsController());
+  String scanResult = "";
+  int _tapCount = 0;
+
+  int adsShowTime = 30;
+  int adsChangeDuration = 10;
+  int adminPin = 0;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    settingsController.hideStatusBar(true);
+
+    shipMentController.getAdminDetails();
+    everAll([
+      helperController.isUserIdLoaded,
+      helperController.isDeviceIdLoaded,
+    ], (values) {
+      final isUserLoaded = helperController.isUserIdLoaded.value;
+      final isDeviceLoaded = helperController.isDeviceIdLoaded.value;
+
+      if (isUserLoaded && isDeviceLoaded) {
+        handleScreenInActivity();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      print("Background");
+
+      // settingsController.hideStatusBar(false);
+    } else if (state == AppLifecycleState.paused) {
+      print("Paused");
+    } else if (state == AppLifecycleState.resumed) {
+      // settingsController.hideStatusBar(true);
+
+      print("Resumed");
+    }
+  }
+
+  Future<void> _handleFetchUserData() async {
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(helperController.userId.value)
+        .collection("devices")
+        .doc(helperController.deviceId.value)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data =
+            documentSnapshot.data() as Map<String, dynamic>;
+        setState(() {
+          adsShowTime = int.parse(data['adsReloadTime'].toString()) ?? 30;
+          adsChangeDuration =
+              int.parse(data['adsChangeDuration'].toString()) ?? 10;
+          adminPin = int.parse(data['unlockPin'].toString()) ?? 0;
+        });
+      }
+    });
+  }
+
+  void handleScreenInActivity() async {
+    await _handleFetchUserData();
+    InAppIdleDetector.initialize(
+      timeout: Duration(seconds: adsShowTime),
+      onIdle: () {
+        showModalBottomSheet(
+          constraints: const BoxConstraints.expand(),
+          scrollControlDisabledMaxHeightRatio: 1.0,
+          context: context,
+          isDismissible: true,
+          enableDrag: false,
+          isScrollControlled: false,
+          backgroundColor: Colors.transparent,
+          builder: (context) {
+            return Container(
+              color: Colors.blueGrey,
+              height: MediaQuery.of(context).size.height,
+              width: MediaQuery.of(context).size.width,
+              child: Center(
+                child: Obx(
+                  () => !ads.isAdsLoaded.value
+                      ? const SizedBox.shrink()
+                      : Center(
+                          child: CarouselSlider(
+                            options: CarouselOptions(
+                              autoPlay: true,
+                              autoPlayInterval:
+                                  Duration(seconds: adsChangeDuration),
+                              height: MediaQuery.of(context).size.height / 2,
+                              viewportFraction: 1.0,
+                            ),
+                            items: ads.adsList.map((i) {
+                              return Builder(
+                                builder: (BuildContext context) {
+                                  return Container(
+                                    width: double.infinity, // full width
+                                    height:
+                                        MediaQuery.of(context).size.height / 2,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      image: DecorationImage(
+                                        image: NetworkImage(i.adsImageUrl),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+      onActive: () {
+        print("Active");
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  void refreshPage() {
+    Get.offAll(() => const DashboardPage());
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: Text(scanResult),
+        // leading: IconButton(
+        //     onPressed: () {
+        //       shipMentController.testSendEmail();
+        //     },
+        //     icon: Icon(Icons.email)),
         actions: [
           const Icon(
             Icons.storefront_outlined,
@@ -65,6 +219,8 @@ class _DashboardPageState extends State<DashboardPage> {
                     future: FirebaseFirestore.instance
                         .collection("users")
                         .doc(helperController.userId.value)
+                        .collection("devices")
+                        .doc(helperController.deviceId.value)
                         .get(),
                     builder: (BuildContext context,
                         AsyncSnapshot<DocumentSnapshot> snapshot) {
@@ -73,15 +229,37 @@ class _DashboardPageState extends State<DashboardPage> {
                       }
 
                       if (snapshot.hasData && !snapshot.data!.exists) {
-                        return const Text("Document does not exist");
+                        return GestureDetector(
+                            onDoubleTap: () {
+                              LocalStorageServices.storeUserLoginStatus(
+                                  isLogin: false);
+                              Get.offAll(() => const LoginScreen());
+                            },
+                            child: const Text("Document does not exist"));
                       }
 
                       if (snapshot.connectionState == ConnectionState.done) {
                         Map<String, dynamic> data =
                             snapshot.data!.data() as Map<String, dynamic>;
                         return GestureDetector(
-                          onTap: () {
-                            // machineInfoController.getMachineInformation();
+                          onTap: () async {
+                            _tapCount++;
+
+                            if (_tapCount >= 7) {
+                              _tapCount = 0; // reset after success
+
+                              if (helperController.canShowLogoutButton.value) {
+                                await _handleFetchUserData();
+                                showLogoutDialog(context);
+                              } else {
+                                Get.to(() => const SettingPage());
+                              }
+                            }
+
+                            // Optional: reset after some time if not continuous taps
+                            Future.delayed(const Duration(seconds: 2), () {
+                              _tapCount = 0;
+                            });
                           },
                           child: Text(
                             data['serialNumber'] ?? "",
@@ -105,109 +283,126 @@ class _DashboardPageState extends State<DashboardPage> {
           )
         ],
       ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            Container(
-              color: Colors.cyan,
-              height: 100,
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text("Setting"),
-              onTap: () {
-                Get.to(() => const SettingPage());
-              },
-            )
-          ],
-        ),
-      ),
       body: Padding(
         padding: PaddingUtils.SCREEN_PADDING,
-        child: Column(
-          children: [
-            BannerComponent(),
-            const SizedBox(
-              height: 10,
-            ),
-            const PurchaseDescription(),
-            const SizedBox(
-              height: 10,
-            ),
+        child: RefreshIndicator(
+          onRefresh: () async {
+            refreshPage();
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BannerComponent(),
 
-            Obx(() {
-              if (!helperController.isUserIdLoaded.value) {
-                return const SizedBox.shrink();
-              }
+              const SizedBox(
+                height: 20,
+              ),
+              // const PurchaseDescription(),
+              Text("Products",
+                  style: GoogleFonts.roboto(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  )),
 
-              return Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection("users")
-                      .doc(helperController.userId.value)
-                      .collection("Items")
-                      .snapshots(),
-                  builder: (BuildContext context,
-                      AsyncSnapshot<QuerySnapshot> snapshot) {
-                    if (snapshot.hasError) {
-                      return const Center(child: Text("Something went wrong"));
-                    }
+              Obx(() {
+                if (!helperController.isUserIdLoaded.value) {
+                  return const SizedBox.shrink();
+                }
 
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+                return Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection("users")
+                        .doc(helperController.userId.value)
+                        .collection("devices")
+                        .doc(helperController.deviceId.value)
+                        .collection("Items")
+                        .snapshots(),
+                    builder: (BuildContext context,
+                        AsyncSnapshot<QuerySnapshot> snapshot) {
+                      if (snapshot.hasError) {
+                        return const Center(
+                            child: Text("Something went wrong"));
+                      }
 
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return const Center(child: Text("No items available"));
-                    }
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-                    // Parse Firestore data into a list (assuming ItemsModel exists)
-                    List<UserItemModel> drinkItems =
-                        snapshot.data!.docs.map((doc) {
-                      return UserItemModel.fromFirestore(
-                          doc.data() as Map<String, dynamic>);
-                    }).toList();
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return const Center(child: Text("No items available"));
+                      }
 
-                    return GridView.builder(
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.all(10),
-                      itemCount: drinkItems.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount:
-                            MediaQuery.of(context).size.width > 600 ? 3 : 2,
-                        childAspectRatio: 0.7,
-                        mainAxisSpacing: 10,
-                        crossAxisSpacing: 10,
-                      ),
-                      itemBuilder: (context, index) {
-                        return ProductCardComponent(
-                            itemsModel: drinkItems[index]);
-                      },
-                    );
-                  },
-                ),
-              );
-            }),
+                      // Parse Firestore data into a list (assuming ItemsModel exists)
+                      // List<UserItemModel> drinkItems =
+                      //     snapshot.data!.docs.map((doc) {
+                      //       if (doc.data()!['inventoryThreshold']!=0) {
 
-            // Expanded(
-            //   child: GridView.builder(
-            //       itemCount: channelNumber.length,
-            //       gridDelegate:
-            //           const SliverGridDelegateWithFixedCrossAxisCount(
-            //               crossAxisCount: 2),
-            //       itemBuilder: (context, index) {
-            //         return TextButton(
-            //             onPressed: () async {
-            //               String message =
-            //                   await ShipmentService.initiateShipment(
-            //                       1, channelNumber[index], 1, false, false);
-            //               print(message);
-            //             },
-            //             child:
-            //                 Text("Check motor no ${channelNumber[index]}"));
-            //       }),
-            // )
-          ],
+                      //       }
+                      //   final docId = doc.id;
+                      //   return UserItemModel.fromFirestore(
+                      //       doc.data() as Map<String, dynamic>, docId);
+                      // }).toList();
+
+                      List<UserItemModel> drinkItems = snapshot.data!.docs
+                          .where((doc) =>
+                              (doc.data() as Map<String, dynamic>)[
+                                      'inventoryThreshold'] !=
+                                  0 &&
+                              (doc.data()
+                                      as Map<String, dynamic>)['channelNo'] !=
+                                  null)
+                          .map((doc) {
+                        final docId = doc.id;
+                        return UserItemModel.fromFirestore(
+                            doc.data() as Map<String, dynamic>, docId);
+                      }).toList();
+                      if (drinkItems.isEmpty) {
+                        return const Center(child: Text("Items is  Empty .."));
+                      }
+
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.all(10),
+                        itemCount: drinkItems.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount:
+                              MediaQuery.of(context).size.width > 600 ? 3 : 2,
+                          childAspectRatio: 0.7,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                        ),
+                        itemBuilder: (context, index) {
+                          return ProductCardComponent(
+                              itemsModel: drinkItems[index]);
+                        },
+                      );
+                    },
+                  ),
+                );
+              }),
+
+              // Expanded(
+              //   child: GridView.builder(
+              //       itemCount: channelNumber.length,
+              //       gridDelegate:
+              //           const SliverGridDelegateWithFixedCrossAxisCount(
+              //               crossAxisCount: 2),
+              //       itemBuilder: (context, index) {
+              //         return TextButton(
+              //             onPressed: () async {
+              //               String message =
+              //                   await ShipmentService.initiateShipment(
+              //                       1, channelNumber[index], 1, false, false);
+              //               print(message);
+              //             },
+              //             child:
+              //                 Text("Check motor no ${channelNumber[index]}"));
+              //       }),
+              // )
+            ],
+          ),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -290,6 +485,165 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
       ),
+    );
+  }
+
+  void showLogoutDialog(BuildContext context) {
+    final pinController = TextEditingController();
+    var isPinValid = false.obs;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Obx(
+          () => Dialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            backgroundColor: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.close),
+                      color: Colors.green,
+                    ),
+                  ),
+                  const Icon(Icons.lock_outline, size: 50, color: Colors.teal),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Enter Admin PIN",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "Only authorized users can log out.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  // 🔢 PIN input
+                  Pinput(
+                    controller: pinController,
+                    length: 4,
+                    obscureText: true,
+                    obscuringCharacter: '•',
+                    animationCurve: Curves.easeInOut,
+                    animationDuration: const Duration(milliseconds: 200),
+                    defaultPinTheme: PinTheme(
+                      width: 60,
+                      height: 60,
+                      textStyle: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade400),
+                      ),
+                    ),
+                    focusedPinTheme: PinTheme(
+                      width: 60,
+                      height: 60,
+                      textStyle: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.teal, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.teal.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          )
+                        ],
+                      ),
+                    ),
+                    onChanged: (value) => isPinValid.value = false,
+                    onCompleted: (pin) {
+                      if (pin == adminPin.toString()) {
+                        isPinValid.value = true;
+                        print("PIN valid");
+                      } else {
+                        isPinValid.value = false;
+                        MessageUtils.showError(
+                            "Invalid PIN. Please try again.");
+                      }
+                    },
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // 🧭 Buttons
+                  Visibility(
+                    visible: isPinValid.value,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Get.to(() => const SettingPage());
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.grey),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 25, vertical: 12),
+                          ),
+                          child: const Text(
+                            "Settings",
+                            style: TextStyle(color: Colors.grey, fontSize: 16),
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            LocalStorageServices.storeUserLoginStatus(
+                                isLogin: false);
+                            settingsController.hideStatusBar(false);
+                            Get.offAll(() => const LoginScreen());
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 25, vertical: 12),
+                          ),
+                          child: const Text(
+                            "Logout",
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

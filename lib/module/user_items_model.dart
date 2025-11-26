@@ -1,4 +1,5 @@
 class UserItemModel {
+  final String id;
   final int ageLimit;
   final int channelNo;
   final double costPrice;
@@ -12,6 +13,7 @@ class UserItemModel {
   final double sellingPrice;
 
   UserItemModel({
+    required this.id,
     required this.ageLimit,
     required this.channelNo,
     required this.costPrice,
@@ -26,8 +28,9 @@ class UserItemModel {
   });
 
   // Factory constructor to create an instance from Firestore document
-  factory UserItemModel.fromFirestore(Map<String, dynamic> data) {
+  factory UserItemModel.fromFirestore(Map<String, dynamic> data, String docId) {
     return UserItemModel(
+      id: docId ?? "0d34",
       ageLimit: data['ageLimit'] ?? 0,
       channelNo: data['channelNo'] ?? 0,
       costPrice: (data['costPrice'] ?? 0).toDouble(),

@@ -19,6 +19,8 @@ class AdsController extends GetxController {
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
+          .collection("devices")
+          .doc(await LocalStorageServices.getDeviceId())
           .collection("Ads")
           .get();
       for (var doc in snapshot.docs) {

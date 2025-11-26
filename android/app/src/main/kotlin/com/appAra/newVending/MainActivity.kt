@@ -15,22 +15,33 @@ import cc.uling.usdk.board.wz.para.SReplyPara
 import cc.uling.usdk.board.wz.para.SSReplyPara
 import android.widget.Toast
 import com.ys.rkapi.MyManager;
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.content.Context
 
 
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "com.appAra.newVending/device"
+     private val SCAN_CHANNEL = "com.appAra.newVending/scanner"
     private var displayer = zcapi() // Initialize zcapi
      private var baudrate: Int = 9600
     // serial driver
     private lateinit var driver: UBoard
-    private lateinit var cardReaderManager: CardReaderManager
+    
     // serial address
     var commid = "/dev/ttyS0"
- init {
+
+    private var scannerHelper: MainActivityHelper? = null
+    
+    init {
         System.loadLibrary("serial_port")
         
     }
+
+
+    
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     displayer.getContext(applicationContext) // Set context for zcapi
@@ -45,15 +56,11 @@ class MainActivity: FlutterActivity() {
             Toast.makeText(this@MainActivity, "Failed to open serial port", Toast.LENGTH_SHORT).show()
         }
     }
-     cardReaderManager = CardReaderManager(applicationContext)
-     // init the card reader 
-     cardReaderManager.initUsbConnection()
 }
 
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-       
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             val manager = MyManager.getInstance(this)
             when (call.method) {
@@ -68,6 +75,16 @@ class MainActivity: FlutterActivity() {
                     manager.reboot()
                     result.success("Device is rebooting")
                 }
+                "wasAfterReboot"->{
+                     val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                    val restarted = prefs.getBoolean("restarted", false)
+
+                    if (restarted) {
+                        prefs.edit().putBoolean("restarted", false).apply()
+                    }
+
+                    result.success(restarted)
+                }
                 "setGpioDirection" -> {
                     val gpio: Int? = call.argument("gpio")
                     val direction: Int? = call.argument("direction")
@@ -78,7 +95,31 @@ class MainActivity: FlutterActivity() {
                 "shutdownDevice" -> {
                     manager.shutdown()
                     result.success("Device is shutting down")
-                }"upgradeFirmware" -> {
+                }
+              "hideStatusBar" -> {
+    val hide = call.argument<Boolean>("hide") // true = hide, false = show
+    if (hide != null) {
+        // Hide or show status + nav bar
+        manager.hideStatusBar(!hide)
+        manager.hideNavBar(hide)
+
+        if (hide) {
+            // When hidden → block sliding
+            manager.setSlideShowNotificationBar(false)
+            manager.setSlideShowNavBar(false)
+        } else {
+            // When shown → allow sliding
+            manager.setSlideShowNotificationBar(true)
+            manager.setSlideShowNavBar(true)
+        }
+
+        result.success("Status bar ${if (hide) "hidden and sliding disabled" else "shown and sliding enabled"}")
+    } else {
+        result.error("INVALID_ARGS", "Missing 'hide' argument", null)
+    }
+}
+
+                "upgradeFirmware" -> {
                     val firmwarePath: String? = call.argument("firmwarePath")
                     if (firmwarePath != null) {
                         manager.upgradeSystem(firmwarePath)
@@ -148,15 +189,32 @@ class MainActivity: FlutterActivity() {
                         result.error("STATUS_ERROR", e.message, null)
                     }
                 }
+               
+// this are for the payment card reader 
+ 
+            
                 else -> {
                     result.notImplemented()
                 }
             }
         }
+
+   val scannerChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SCAN_CHANNEL)
+        scannerHelper = MainActivityHelper(this, scannerChannel)
+        scannerChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "initializeScanner" -> { scannerHelper?.initializeScanner(); result.success("Scanner initialized") }
+                "startScan" -> { val node = call.argument<Int>("deviceNode"); if (node!=null) scannerHelper?.startScan(node); result.success(null) }
+                "stopScan" -> { val node = call.argument<Int>("deviceNode"); if (node!=null) scannerHelper?.stopScan(node); result.success(null) }
+                else -> result.notImplemented()
+            }
+        }
+
     }
 
      override fun onDestroy() {
         super.onDestroy()
+         scannerHelper?.cleanup()
         if (this::driver.isInitialized) {
             this.driver.EF_CloseDev()
         }

@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:newvendingmachine/controller/Helper/device_ui_helper.dart';
+import 'package:newvendingmachine/controller/PaymentController/payment_controller.dart';
 import 'package:newvendingmachine/controller/Shipment/shipment_controller.dart';
 import 'package:newvendingmachine/controller/cart/cart_controller.dart';
 import 'package:newvendingmachine/utils/colors_utils.dart';
 import 'package:newvendingmachine/utils/message_utils.dart';
 import 'package:newvendingmachine/utils/padding_utils.dart';
+import 'package:newvendingmachine/view/shopping/components/age_verification_page.dart';
 import 'package:newvendingmachine/view/shopping/components/checkout_product_card.dart';
 
-class CheckOutPage extends StatelessWidget {
-  CheckOutPage({super.key});
+class CheckOutPage extends StatefulWidget {
+  const CheckOutPage({super.key});
 
+  @override
+  State<CheckOutPage> createState() => _CheckOutPageState();
+}
+
+class _CheckOutPageState extends State<CheckOutPage> {
   final cartController = Get.find<CartController>();
   final shipmentController = Get.find<ShipmentController>();
+  final paymentController = Get.find<PaymentConroller>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -87,12 +94,96 @@ class CheckOutPage extends StatelessWidget {
                                       : const Size(100, 50),
                                   backgroundColor:
                                       VendingMachineColors.primaryColor),
-                              onPressed: () {
+                              onPressed: () async {
                                 if (cartController.items.isEmpty) {
                                   MessageUtils.showWarning(
                                       "No Items to checkout");
                                 } else {
-                                  showPaymentOptionsDialog(context);
+// check if the age verification is required else skip it
+
+                                  bool isAgeVerificationRequired = false;
+
+                                  for (var item in cartController.items) {
+                                    if (item.ageLimt > 0) {
+                                      isAgeVerificationRequired = true;
+                                      break;
+                                    }
+                                  }
+
+                                  if (!isAgeVerificationRequired) {
+                                    await paymentController
+                                        .handlePrepareForCheckout();
+                                    if (paymentController
+                                        .isPreparedForCheckout.value) {
+                                      await paymentController.handleCheckout(
+                                          paymentTitle:
+                                              "Your Payment ${DateTime.now()}",
+                                          totalPayment:
+                                              cartController.totalPrice,
+                                          totalItems:
+                                              cartController.items.length,
+                                          callBack: (value) {
+                                            if (value) {
+                                              shipmentController
+                                                  .initialShipment();
+                                            } else {
+                                              // MessageUtils.showError(
+                                              //     "Fail to checkout due to payment issue");
+                                            }
+                                          });
+                                    } else {
+                                      MessageUtils.showError(
+                                          "Checkout is not initalized");
+                                    }
+                                  } else {
+                                    // find the highest age requirement among items
+                                    int highestAgeLimit = 0;
+                                    for (var item in cartController.items) {
+                                      if (item.ageLimt > highestAgeLimit) {
+                                        highestAgeLimit = item.ageLimt;
+                                      }
+                                    }
+
+                                    Get.to(() => AgeVerificationPage(
+                                          age: highestAgeLimit,
+                                          callBack: (isVerified) async {
+                                            if (isVerified) {
+                                              // continue with payment process
+                                              await paymentController
+                                                  .handlePrepareForCheckout();
+                                              if (paymentController
+                                                  .isPreparedForCheckout
+                                                  .value) {
+                                                await paymentController
+                                                    .handleCheckout(
+                                                        paymentTitle:
+                                                            "Your Payment ${DateTime.now()}",
+                                                        totalPayment:
+                                                            cartController
+                                                                .totalPrice,
+                                                        totalItems:
+                                                            cartController
+                                                                .items.length,
+                                                        callBack: (value) {
+                                                          if (value) {
+                                                            shipmentController
+                                                                .initialShipment();
+                                                          } else {
+                                                            // MessageUtils.showError(
+                                                            //     "Fail to checkout due to payment issue");
+                                                          }
+                                                        });
+                                              } else {
+                                                MessageUtils.showError(
+                                                    "Checkout is not initialized");
+                                              }
+                                            } else {
+                                              MessageUtils.showWarning(
+                                                  "Age verification failed. You must be at least $highestAgeLimit years old to buy these items.");
+                                            }
+                                          },
+                                        ));
+                                  }
                                 }
                               },
                               child: Text(
@@ -138,8 +229,12 @@ class CheckOutPage extends StatelessWidget {
                           size: DeviceUiHelper.isNotMobile() ? 250 : 100,
                         ),
                         onPressed: () {
-                          shipmentController.initialShipment();
-                          // motorController.configureSerialPort();
+                          // call this in production
+
+                          // shipmentController.initialShipment();
+
+// this is for the test
+                          shipmentController.addOrderToDatabase();
                         },
                       ),
                       const Text('QR Code')
@@ -155,36 +250,17 @@ class CheckOutPage extends StatelessWidget {
                           size: DeviceUiHelper.isNotMobile() ? 250 : 100,
                         ),
                         onPressed: () {
-                          SmartDialog.showLoading(msg: "Wait while processing");
-                          // motorController.configureSerialPort();
+                          // call this in production
+
+                          // shipmentController.initialShipment();
+
+// this is for the test
+                          shipmentController.addOrderToDatabase();
                         },
                       ),
                       const Text('Card Payment')
                     ],
                   ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // QR Code Icon
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.card_membership_sharp,
-                          size: DeviceUiHelper.isNotMobile() ? 250 : 100,
-                        ),
-                        onPressed: () {
-                          SmartDialog.showLoading(msg: "Wait while processing");
-                          // motorController.configureSerialPort();
-                        },
-                      ),
-                      const Text('On Screen Payment')
-                    ],
-                  ),
-                  // Card Payment Icon
                 ],
               ),
             ],

@@ -20,13 +20,17 @@ compileOptions {
 kotlinOptions {
   jvmTarget = 17
 }
+
+    lintOptions {                                                           
+   checkReleaseBuilds false                                              
+   }
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.appAra.newVending"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 26
+        targetSdk = 30
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -38,6 +42,7 @@ kotlinOptions {
             signingConfig = signingConfigs.debug
         }
     }
+      
 }
 dependencies {
  
@@ -47,6 +52,10 @@ dependencies {
     implementation files('libs/zckjAPI-2.2.jar')
     implementation files('libs/ysapi.jar')
     implementation files('libs/SmartCardLib.jar')
+    implementation files('libs/usbserial_v4.5.2.jar')
+    implementation files('libs/scan_pro.jar')
+
+
 
 
 
