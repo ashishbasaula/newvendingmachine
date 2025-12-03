@@ -74,11 +74,12 @@ class _DashboardPageState extends State<DashboardPage>
     everAll([
       helperController.isUserIdLoaded,
       helperController.isDeviceIdLoaded,
-    ], (values) {
+    ], (values) async {
       final isUserLoaded = helperController.isUserIdLoaded.value;
       final isDeviceLoaded = helperController.isDeviceIdLoaded.value;
 
       if (isUserLoaded && isDeviceLoaded) {
+        _handleFetchSumupData();
         handleScreenInActivity();
       }
     });
@@ -124,6 +125,27 @@ class _DashboardPageState extends State<DashboardPage>
         });
       }
     });
+  }
+
+  Future<void> _handleFetchSumupData() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(helperController.userId.value)
+          .get()
+          .then((DocumentSnapshot documentSnapshot) {
+        if (documentSnapshot.exists) {
+          Map<String, dynamic> data =
+              documentSnapshot.data() as Map<String, dynamic>;
+          setState(() {
+            helperController.sumupEmail.value = data['sumUpEmail'];
+            helperController.sumupPassword.value = data['sumUpPassword'];
+          });
+        }
+      });
+    } catch (e) {
+      print(e.toString());
+    }
   }
 
   void handleScreenInActivity() async {

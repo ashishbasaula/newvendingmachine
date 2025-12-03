@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:newvendingmachine/controller/Helper/helper_controller.dart';
 import 'package:newvendingmachine/utils/message_utils.dart';
@@ -125,25 +126,27 @@ class _SettingPageState extends State<SettingPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                hintText: "Search", // Placeholder text
-                prefixIcon: const Icon(Icons.search), // Search icon
-                fillColor: Colors.black12, // Background color
-                filled: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30), // Rounded corners
-                  borderSide: BorderSide.none, // No border
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  hintText: "Search", // Placeholder text
+                  prefixIcon: const Icon(Icons.search), // Search icon
+                  fillColor: Colors.black12, // Background color
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30), // Rounded corners
+                    borderSide: BorderSide.none, // No border
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
+              const SizedBox(height: 20),
+              ListView.builder(
                 itemCount: filteredCategories.length,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                 itemBuilder: (context, index) {
                   return ListTile(
                     leading: Icon(filteredCategories[index].iconData),
@@ -154,14 +157,34 @@ class _SettingPageState extends State<SettingPage> {
                   );
                 },
               ),
-            ),
-            ElevatedButton(
-                onPressed: () {
-                  helperController.canShowLogoutButton.value = true;
-                  MessageUtils.showSuccess("SucessFully Enabled Pin");
+              ListTile(
+                leading: const Icon(Icons.email),
+                title: const Text("Sumup Email"),
+                subtitle: const Text("Sumup@gmail.com"),
+                trailing: const Icon(Icons.copy),
+                onTap: () {
+                  copyToClipboard(helperController.sumupEmail.string);
+                  MessageUtils.showSuccessGreen("Copied sucessfully");
                 },
-                child: const Text("Show Pin Btton"))
-          ],
+              ),
+              ListTile(
+                leading: const Icon(Icons.password),
+                title: const Text("Sumup password"),
+                subtitle: Text("*" * 4),
+                trailing: const Icon(Icons.copy),
+                onTap: () {
+                  copyToClipboard(helperController.sumupPassword.string);
+                  MessageUtils.showSuccessGreen("Copied sucessfully");
+                },
+              ),
+              ElevatedButton(
+                  onPressed: () {
+                    helperController.canShowLogoutButton.value = true;
+                    MessageUtils.showSuccess("SucessFully Enabled Pin");
+                  },
+                  child: const Text("Show Pin Btton"))
+            ],
+          ),
         ),
       ),
     );
@@ -171,6 +194,10 @@ class _SettingPageState extends State<SettingPage> {
   void dispose() {
     searchController.dispose();
     super.dispose();
+  }
+
+  void copyToClipboard(String textToCopy) {
+    Clipboard.setData(ClipboardData(text: textToCopy)).then((_) {});
   }
 }
 

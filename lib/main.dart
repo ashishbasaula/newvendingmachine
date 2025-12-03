@@ -6,10 +6,12 @@ import 'package:newvendingmachine/Services/local_storage_services.dart';
 import 'package:newvendingmachine/controller/Auth/auth_controller.dart';
 import 'package:newvendingmachine/controller/BootReceiver/boot_receiver.dart';
 import 'package:newvendingmachine/controller/Device/setting_controller.dart';
+import 'package:newvendingmachine/controller/Helper/helper_controller.dart';
 import 'package:newvendingmachine/controller/PaymentController/payment_controller.dart';
 import 'package:newvendingmachine/controller/Shipment/shipment_controller.dart';
 import 'package:newvendingmachine/view/Auth/login_screen.dart';
 import 'package:newvendingmachine/view/Dashboard/dashboard_page.dart';
+import 'package:newvendingmachine/view/Setting/setting_page.dart';
 import 'controller/cart/cart_controller.dart';
 import 'controller/items/items_controller.dart';
 
@@ -47,6 +49,7 @@ class MyApp extends StatelessWidget {
       // here
       builder: FlutterSmartDialog.init(),
       home: isLogin ? const DashboardPage() : const LoginScreen(),
+      // home: SettingPage(),
     );
   }
 }

@@ -7,6 +7,8 @@ class HelperController extends GetxController {
   var isUserIdLoaded = false.obs;
   var isDeviceIdLoaded = false.obs;
   var canShowLogoutButton = false.obs;
+  var sumupEmail = "".obs;
+  var sumupPassword = "".obs;
 
   @override
   void onInit() {

@@ -13,6 +13,16 @@ class MessageUtils {
     );
   }
 
+  static void showSuccessGreen(String message) {
+    Get.snackbar(
+      "Success",
+      message,
+      backgroundColor: Colors.green,
+      colorText: Colors.white,
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
   static void showError(String message) {
     Get.snackbar(
       "Error",
