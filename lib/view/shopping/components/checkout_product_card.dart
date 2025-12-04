@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:newvendingmachine/controller/Helper/helper_controller.dart';
+import 'package:newvendingmachine/controller/Helper/price_format_helper.dart';
 import 'package:newvendingmachine/controller/cart/cart_controller.dart';
 import 'package:newvendingmachine/module/cart_model.dart';
 import 'package:newvendingmachine/utils/message_utils.dart';
@@ -63,7 +65,7 @@ class CheckoutProductCard extends StatelessWidget {
                 Column(
                   children: [
                     Text(
-                      "\$${cartItem.price}",
+                      "\$${PriceFormatHelper.formatPrice(cartItem.price)}",
                       style:
                           Theme.of(context).textTheme.headlineLarge?.copyWith(
                                 fontWeight: FontWeight.bold,

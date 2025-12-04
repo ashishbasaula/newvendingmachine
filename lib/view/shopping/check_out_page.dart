@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:newvendingmachine/controller/Helper/device_ui_helper.dart';
+import 'package:newvendingmachine/controller/Helper/price_format_helper.dart';
 import 'package:newvendingmachine/controller/PaymentController/payment_controller.dart';
 import 'package:newvendingmachine/controller/Shipment/shipment_controller.dart';
 import 'package:newvendingmachine/controller/cart/cart_controller.dart';
@@ -71,7 +72,7 @@ class _CheckOutPageState extends State<CheckOutPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "\$ ${cartController.totalPrice.toStringAsFixed(2)}",
+                                "\$ ${PriceFormatHelper.formatPrice(cartController.totalPrice)}",
                                 style: Theme.of(context)
                                     .textTheme
                                     .headlineMedium!

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:newvendingmachine/controller/Helper/price_format_helper.dart';
 import 'package:newvendingmachine/controller/cart/cart_controller.dart';
 import 'package:newvendingmachine/module/cart_model.dart';
 import 'package:newvendingmachine/module/user_items_model.dart';
@@ -60,7 +61,7 @@ class ProductCardComponent extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "\$${itemsModel.sellingPrice}",
+                    "\$${PriceFormatHelper.formatPrice(itemsModel.sellingPrice)}",
                     style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                           fontWeight: FontWeight.bold,
                         ),

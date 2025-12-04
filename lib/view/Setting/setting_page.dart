@@ -75,8 +75,9 @@ class _SettingPageState extends State<SettingPage> {
           Get.to(() => const PowerManagementPage());
         }),
     CategoryItems(
-        name: 'GPIO Controls',
-        iconData: Icons.settings_input_component,
+        name: 'Update App',
+        iconData: Icons.system_update,
+        isdifferentColor: true,
         onTap: () {
           // print('GPIO Controls tapped');
           Get.to(() => const GPIOControlsPage());
@@ -150,7 +151,12 @@ class _SettingPageState extends State<SettingPage> {
                 itemBuilder: (context, index) {
                   return ListTile(
                     leading: Icon(filteredCategories[index].iconData),
-                    title: Text(filteredCategories[index].name),
+                    title: Text(
+                      filteredCategories[index].name,
+                      style: filteredCategories[index].isdifferentColor != null
+                          ? const TextStyle(color: Colors.green)
+                          : null,
+                    ),
                     onTap: () {
                       filteredCategories[index].onTap();
                     }, // Implement onTap callback
@@ -205,7 +211,11 @@ class CategoryItems {
   final String name;
   final IconData iconData;
   final Function onTap;
+  final bool? isdifferentColor;
 
   CategoryItems(
-      {required this.name, required this.iconData, required this.onTap});
+      {required this.name,
+      required this.iconData,
+      required this.onTap,
+      this.isdifferentColor});
 }

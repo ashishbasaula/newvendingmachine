@@ -45,7 +45,7 @@ class AuthController extends GetxController {
 // in production replace with actual serial number
     final serialNumber =
         settingController.serialNumber.value; // use this in production
-    // final serialNumberTest = "YS06F17240924000248"; // use this for testing
+    // final serialNumberTest = "YS06F17240924000246"; // use this for testing
     return serialNumber;
   }
 }
