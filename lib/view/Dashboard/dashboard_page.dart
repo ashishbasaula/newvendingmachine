@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:in_app_idle_detector/in_app_idle_detector.dart';
 import 'package:newvendingmachine/Services/local_storage_services.dart';
+import 'package:newvendingmachine/Services/sumup_services.dart';
 import 'package:newvendingmachine/controller/Ads/ads_controller.dart';
 import 'package:newvendingmachine/controller/Device/setting_controller.dart';
 import 'package:newvendingmachine/controller/Helper/device_ui_helper.dart';
@@ -21,6 +23,8 @@ import 'package:newvendingmachine/view/Auth/login_screen.dart';
 import 'package:newvendingmachine/view/Dashboard/components/banner_component.dart';
 import 'package:newvendingmachine/view/Setting/setting_page.dart';
 import 'package:pinput/pinput.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sumup/sumup.dart';
 
 import '../../utils/colors_utils.dart';
 import '../shopping/check_out_page.dart';
@@ -56,7 +60,7 @@ class _DashboardPageState extends State<DashboardPage>
   final helperController = Get.put(HelperController());
   final settingsController = Get.put(SettingController());
   final shipMentController = Get.find<ShipmentController>();
-
+  final sumupService = Get.put(SumupServices());
   final ads = Get.put(AdsController());
   String scanResult = "";
   int _tapCount = 0;
@@ -64,9 +68,11 @@ class _DashboardPageState extends State<DashboardPage>
   int adsShowTime = 30;
   int adsChangeDuration = 10;
   int adminPin = 0;
+
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addObserver(this);
     settingsController.hideStatusBar(true);
 

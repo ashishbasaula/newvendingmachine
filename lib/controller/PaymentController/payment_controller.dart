@@ -30,11 +30,12 @@ class PaymentConroller extends GetxController {
     statusMessage.value = 'Initializing SumUp SDK...';
 
     try {
-      await Sumup.init(affiliateKey);
+      final result = await Sumup.init(affiliateKey);
 
       isSdkInitialized.value = true;
       statusMessage.value = 'SDK initialized successfully. Please login.';
-
+      // MessageUtils.showSuccessGreen(
+      //     "sumup response is : ${result.message.toString()}");
       // Check if already logged in
       await checkLoginStatus();
     } catch (e) {
@@ -76,7 +77,7 @@ class PaymentConroller extends GetxController {
 
       statusMessage.value =
           'Logged in as: ${merchant.merchantCode ?? 'Unknown'}';
-      MessageUtils.showSuccess(statusMessage.value);
+      // MessageUtils.showSuccess(statusMessage.value);
     } catch (e) {
       debugPrint('Error getting merchant info: $e');
       MessageUtils.showError('Error getting merchant info: $e');
@@ -98,6 +99,7 @@ class PaymentConroller extends GetxController {
         isLoginSuccess.value = true;
         statusMessage.value = 'Login successful!';
 
+        //  MessageUtils.showSuccess("Sumup Login Details is : $data");
         await getMerchantInfo();
       } else {
         statusMessage.value =

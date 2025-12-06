@@ -27,9 +27,20 @@ class CartController extends GetxController {
     _items.refresh(); // Notify listeners about the update.
   }
 
+  double get totalTax {
+    return _items.fold(0.0, (sum, item) {
+      double itemTotal = item.price * item.quantity;
+      double itemTax = (itemTotal * item.taxPercentage!) / 100;
+      return sum + itemTax;
+    });
+  }
+
   // Get total price
-  double get totalPrice =>
+  double get subtotal =>
       _items.fold(0, (sum, item) => sum + item.price * item.quantity);
+
+  // Get total price (including tax)
+  double get totalPrice => subtotal + totalTax;
 
   // Checkout method
   void checkout() {

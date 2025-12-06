@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:newvendingmachine/controller/Helper/price_format_helper.dart';
+import 'package:newvendingmachine/controller/Helper/tax_helper.dart';
 import 'package:newvendingmachine/controller/cart/cart_controller.dart';
 import 'package:newvendingmachine/module/cart_model.dart';
 import 'package:newvendingmachine/module/user_items_model.dart';
@@ -14,10 +15,12 @@ class ProductCardComponent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {
+      onTap: () async {
         if (itemsModel.inventoryThreshold == 0) {
           MessageUtils.showWarning("No Items in inventory");
         } else {
+          double taxPercentage =
+              await TaxHelper.getTaxPercentage(itemsModel.goodsType);
           cartController.addItem(CartItem(
               id: itemsModel.id,
               name: itemsModel.goodsName,
@@ -26,7 +29,8 @@ class ProductCardComponent extends StatelessWidget {
               inventoryThreasHold: itemsModel.inventoryThreshold,
               itemCategory: itemsModel.goodsType,
               channelNumber: itemsModel.channelNo.toString(),
-              ageLimt: itemsModel.ageLimit));
+              ageLimt: itemsModel.ageLimit,
+              taxPercentage: taxPercentage));
         }
       },
       child: Card(
@@ -107,12 +111,15 @@ class ProductCardComponent extends StatelessWidget {
                                     VendingMachineColors.primaryColor,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8))),
-                            onPressed: () {
+                            onPressed: () async {
                               // storeUsername();
                               if (itemsModel.inventoryThreshold == 0) {
                                 MessageUtils.showWarning(
                                     "No Items in inventory");
                               } else {
+                                double taxPercentage =
+                                    await TaxHelper.getTaxPercentage(
+                                        itemsModel.goodsType);
                                 cartController.addItem(CartItem(
                                     id: itemsModel.id,
                                     name: itemsModel.goodsName,
@@ -123,7 +130,8 @@ class ProductCardComponent extends StatelessWidget {
                                     itemCategory: itemsModel.goodsType,
                                     channelNumber:
                                         itemsModel.channelNo.toString(),
-                                    ageLimt: itemsModel.ageLimit));
+                                    ageLimt: itemsModel.ageLimit,
+                                    taxPercentage: taxPercentage));
                               }
                             },
                             icon: const Icon(Icons.shopping_cart)),

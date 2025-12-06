@@ -36,4 +36,24 @@ class LocalStorageServices {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
     return sharedPreferences.getBool(loginKey) ?? false;
   }
+
+  static Future<void> storeAccessToken({required String token}) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    sharedPreferences.setString("accessToken", token);
+  }
+
+  static Future<String> getAccessToken() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    return sharedPreferences.getString("accessToken") ?? "";
+  }
+
+  static Future<void> storeRefreshToken({required String token}) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    sharedPreferences.setString("refreshToken", token);
+  }
+
+  static Future<String> getRefreshToken() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    return sharedPreferences.getString("refreshToken") ?? "";
+  }
 }

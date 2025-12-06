@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:newvendingmachine/view/sumupTest/new_sumup_test.dart';
 
 class PowerManagementPage extends StatefulWidget {
   const PowerManagementPage({super.key});
@@ -70,6 +72,13 @@ class PowerManagementPageState extends State<PowerManagementPage> {
                   );
                 });
               }
+            },
+          ),
+          ListTile(
+            title: const Text('Save Settings'),
+            trailing: const Icon(Icons.save),
+            onTap: () {
+              Get.to(() => SumUpLoginWebView());
             },
           ),
         ],

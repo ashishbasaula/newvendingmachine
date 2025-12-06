@@ -8,6 +8,7 @@ class CartItem {
   final int inventoryThreasHold;
   final String itemCategory;
   final int ageLimt;
+  final double? taxPercentage;
 
   CartItem(
       {required this.id,
@@ -18,7 +19,8 @@ class CartItem {
       this.quantity = 1,
       required this.imageUrl,
       required this.itemCategory,
-      required this.ageLimt});
+      required this.ageLimt,
+      required this.taxPercentage});
 
   Map<String, dynamic> toMap() {
     return {
