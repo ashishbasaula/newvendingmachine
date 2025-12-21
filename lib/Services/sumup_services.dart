@@ -5,20 +5,22 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:newvendingmachine/Services/local_storage_services.dart';
+import 'package:newvendingmachine/const/const.dart';
+import 'package:newvendingmachine/controller/PaymentController/payment_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sumup/sumup.dart';
 
 class SumupServices extends GetxController {
   String? accessToken;
   String? refreshToken;
-  int? expiresIn; // Seconds
+  int expiresIn = 3600;
   DateTime? lastRefreshed;
   Timer? _sumupLoginTimer;
 
   @override
   void onInit() {
     super.onInit();
-    initializeSumup();
+    // initializeSumup();
   }
 
   @override
@@ -56,11 +58,18 @@ class SumupServices extends GetxController {
 
   /// Ensure token is valid and log in to SumUp
   Future<void> ensureValidTokenAndLogin() async {
+    const String affiliateKey = PaymentConstant.AFFELIATED_KEY;
+
     final token = await getValidAccessToken();
     if (token != null) {
       try {
+        var paymntController = Get.find<PaymentConroller>();
+        if (!paymntController.isSdkInitialized.value) {
+          await Sumup.init(affiliateKey);
+        }
         final result = await Sumup.loginWithToken(token);
         log("SumUp login successful: ${result.message?['loginResult']}");
+        paymntController.isLoginSuccess.value = true;
       } catch (e) {
         log("Error logging in with SumUp token: $e");
       }
@@ -70,7 +79,7 @@ class SumupServices extends GetxController {
   /// Start a timer to refresh token and re-login periodically
   void startPeriodicLoginTimer() {
     _sumupLoginTimer?.cancel();
-    _sumupLoginTimer = Timer.periodic(const Duration(minutes: 5), (_) async {
+    _sumupLoginTimer = Timer.periodic(const Duration(minutes: 59), (_) async {
       await ensureValidTokenAndLogin();
       log("SumUp login refreshed every 5 minutes.");
     });
@@ -90,7 +99,10 @@ class SumupServices extends GetxController {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         await storeTokensFromResponse(data);
-        await ensureValidTokenAndLogin();
+        accessToken = data['accessToken'];
+        await Sumup.loginWithToken(accessToken!);
+        var paymntController = Get.find<PaymentConroller>();
+        paymntController.isLoginSuccess.value = true;
         startPeriodicLoginTimer();
       } else {
         log("Failed to get token: ${response.statusCode}");
@@ -136,9 +148,11 @@ class SumupServices extends GetxController {
     refreshToken = data['refreshToken'];
     expiresIn = data['expiresIn'];
     lastRefreshed = DateTime.now();
-
+    log("Storing new tokens. AccessToken: $accessToken");
+    log("RefreshToken: $refreshToken");
     await LocalStorageServices.storeAccessToken(token: accessToken!);
     await LocalStorageServices.storeRefreshToken(token: refreshToken!);
+    await LocalStorageServices.storeLastRefreshed(lastRefreshed!);
   }
 
   /// Check whether token is expired or near expiry
@@ -146,7 +160,11 @@ class SumupServices extends GetxController {
     if (lastRefreshed == null || expiresIn == null) return true;
 
     final expireTime = lastRefreshed!.add(Duration(seconds: expiresIn!));
+    // 5 minutes buffer
     final safeExpire = expireTime.subtract(const Duration(minutes: 5));
+
+    log("Token expires at: $expireTime, safeExpire: $safeExpire, now: ${DateTime.now()}");
+
     return DateTime.now().isAfter(safeExpire);
   }
 

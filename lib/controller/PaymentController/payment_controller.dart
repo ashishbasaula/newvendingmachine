@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -133,6 +135,7 @@ class PaymentConroller extends GetxController {
         isSettingSuccess.value = true;
         statusMessage.value = 'Terminal configured successfully!';
         MessageUtils.showSuccess(statusMessage.value);
+        checkSumUpStatusAndPing();
       } else {
         statusMessage.value = 'Settings configuration failed';
         MessageUtils.showWarning(statusMessage.value);
@@ -279,5 +282,32 @@ class PaymentConroller extends GetxController {
     } catch (e) {
       MessageUtils.showError(e.toString());
     }
+  }
+
+  Future<bool> checkSumupLoginStatus() async {
+    if (!isSdkInitialized.value) {
+      return false;
+    }
+
+    try {
+      final isLoggedIn = await Sumup.isLoggedIn ?? false;
+      return isLoggedIn;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Timer? _sumupStatusTimer;
+  void checkSumUpStatusAndPing() async {
+    _sumupStatusTimer = Timer.periodic(const Duration(minutes: 30), (_) async {
+      await Sumup.prepareForCheckout();
+      MessageUtils.showSuccess("Pinging..");
+    });
+  }
+
+  @override
+  void onClose() {
+    _sumupStatusTimer?.cancel();
+    super.onClose();
   }
 }

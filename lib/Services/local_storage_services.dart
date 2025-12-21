@@ -56,4 +56,9 @@ class LocalStorageServices {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
     return sharedPreferences.getString("refreshToken") ?? "";
   }
+
+  static Future<void> storeLastRefreshed(DateTime time) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString("lastRefreshed", time.toIso8601String());
+  }
 }

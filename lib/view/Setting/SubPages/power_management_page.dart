@@ -74,13 +74,13 @@ class PowerManagementPageState extends State<PowerManagementPage> {
               }
             },
           ),
-          ListTile(
-            title: const Text('Save Settings'),
-            trailing: const Icon(Icons.save),
-            onTap: () {
-              Get.to(() => SumUpLoginWebView());
-            },
-          ),
+          // ListTile(
+          //   title: const Text('Save Settings'),
+          //   trailing: const Icon(Icons.save),
+          //   onTap: () {
+          //     Get.to(() => SumUpLoginWebView());
+          //   },
+          // ),
         ],
       ),
     );
