@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:in_app_idle_detector/in_app_idle_detector.dart';
+import 'package:newvendingmachine/NewMotorTest/test_motor.dart';
 import 'package:newvendingmachine/Services/local_storage_services.dart';
 import 'package:newvendingmachine/controller/Ads/ads_controller.dart';
 import 'package:newvendingmachine/controller/Device/setting_controller.dart';
@@ -243,11 +244,11 @@ class _DashboardPageState extends State<DashboardPage>
     return Scaffold(
       appBar: AppBar(
         title: Text(scanResult),
-        // leading: IconButton(
-        //     onPressed: () {
-        //       shipMentController.testSendEmail();
-        //     },
-        //     icon: Icon(Icons.email)),
+        leading: IconButton(
+            onPressed: () {
+              Get.to(() => TestMotor());
+            },
+            icon: Icon(Icons.email)),
         actions: [
           const Icon(
             Icons.storefront_outlined,
